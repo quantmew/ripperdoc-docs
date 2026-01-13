@@ -1,0 +1,196 @@
+---
+title: Contributing
+description: How to contribute to Ripperdoc
+---
+
+We welcome contributions to Ripperdoc! This guide will help you get started.
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.10+
+- Git
+- A GitHub account
+
+### Fork and Clone
+
+1. Fork the repository on GitHub
+2. Clone your fork:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/ripperdoc.git
+cd ripperdoc
+```
+
+### Development Setup
+
+1. Create a virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Install in development mode:
+
+```bash
+pip install -e ".[dev]"
+```
+
+3. Install pre-commit hooks:
+
+```bash
+pre-commit install
+```
+
+## Development Workflow
+
+### Running Tests
+
+```bash
+pytest
+```
+
+Run specific tests:
+
+```bash
+pytest tests/test_tools.py
+pytest tests/test_hooks.py -k "test_pre_tool_use"
+```
+
+### Code Style
+
+We use:
+- **Black** for formatting
+- **Ruff** for linting
+- **MyPy** for type checking
+
+Run all checks:
+
+```bash
+black .
+ruff check .
+mypy ripperdoc
+```
+
+### Making Changes
+
+1. Create a branch:
+
+```bash
+git checkout -b feature/my-feature
+```
+
+2. Make your changes
+3. Write tests for new functionality
+4. Run tests and linting
+5. Commit with a descriptive message:
+
+```bash
+git commit -m "feat: add new feature X"
+```
+
+## Contribution Types
+
+### Bug Fixes
+
+1. Check existing issues for the bug
+2. Create an issue if it doesn't exist
+3. Reference the issue in your PR
+
+### New Features
+
+1. Open an issue to discuss the feature
+2. Wait for feedback before implementing
+3. Follow the existing code patterns
+
+### Documentation
+
+Documentation improvements are always welcome:
+- Fix typos
+- Improve explanations
+- Add examples
+- Translate documentation
+
+### New Tools
+
+To add a new tool:
+
+1. Create `ripperdoc/tools/my_tool.py`
+2. Implement the `Tool` interface
+3. Register in `ripperdoc/core/default_tools.py`
+4. Add tests in `tests/test_my_tool.py`
+5. Document in `docs/`
+
+## Pull Request Process
+
+1. Update documentation if needed
+2. Add tests for new functionality
+3. Ensure all tests pass
+4. Update CHANGELOG.md
+5. Submit PR with clear description
+
+### PR Title Format
+
+Use conventional commits:
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation
+- `test:` Tests
+- `refactor:` Code refactoring
+- `chore:` Maintenance
+
+### PR Description Template
+
+```markdown
+## Description
+[What does this PR do?]
+
+## Related Issues
+Fixes #123
+
+## Changes
+- Change 1
+- Change 2
+
+## Testing
+[How was this tested?]
+
+## Checklist
+- [ ] Tests added
+- [ ] Documentation updated
+- [ ] CHANGELOG updated
+```
+
+## Code Guidelines
+
+### Python Style
+
+- Follow PEP 8
+- Use type hints
+- Write docstrings for public functions
+- Keep functions focused and small
+
+### Error Handling
+
+- Use specific exception types
+- Log errors appropriately
+- Provide helpful error messages
+
+### Testing
+
+- Write unit tests for new code
+- Use pytest fixtures
+- Mock external dependencies
+- Aim for high coverage
+
+## Getting Help
+
+- Open an issue for questions
+- Join discussions on GitHub
+- Check existing issues and PRs
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the Apache 2.0 License.

@@ -1,0 +1,92 @@
+---
+title: Installation
+description: Installing Ripperdoc on your system
+---
+
+## Requirements
+
+- Python 3.10 or higher
+- pip or uv package manager
+
+## Installation Methods
+
+### Using pip (Recommended)
+
+```bash
+pip install ripperdoc
+```
+
+### Using uv
+
+```bash
+uv pip install ripperdoc
+```
+
+### From Source
+
+```bash
+git clone https://github.com/anthropics/ripperdoc.git
+cd ripperdoc
+pip install -e .
+```
+
+## API Key Setup
+
+Ripperdoc needs an API key for the LLM provider you want to use. Set the appropriate environment variable:
+
+### Anthropic Claude (Default)
+
+```bash
+export ANTHROPIC_API_KEY="your-api-key"
+```
+
+### OpenAI
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+```
+
+### DeepSeek
+
+```bash
+export DEEPSEEK_API_KEY="your-api-key"
+```
+
+### Google Gemini
+
+```bash
+export GEMINI_API_KEY="your-api-key"
+```
+
+## Verify Installation
+
+```bash
+ripperdoc --version
+```
+
+You should see the version number. Now run:
+
+```bash
+ripperdoc
+```
+
+This will start an interactive session. Type a message to begin chatting with the AI.
+
+## Shell Completion (Optional)
+
+Ripperdoc supports shell completion for bash and zsh:
+
+```bash
+# For bash
+eval "$(ripperdoc --completion bash)"
+
+# For zsh
+eval "$(ripperdoc --completion zsh)"
+```
+
+Add the appropriate line to your shell's rc file (`.bashrc` or `.zshrc`) to enable completion permanently.
+
+## Next Steps
+
+- [Quickstart](/docs/quickstart) - Start using Ripperdoc
+- [Configuration](/docs/configuration) - Customize Ripperdoc settings

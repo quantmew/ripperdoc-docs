@@ -1,0 +1,173 @@
+---
+title: Subagents
+description: Delegate tasks to specialized agents
+---
+
+Subagents allow you to delegate specific tasks to specialized agents with custom configurations.
+
+## What are Subagents?
+
+Subagents are independent agent instances that:
+- Have their own tool scope
+- Can have custom system prompts
+- Run in isolation from the main conversation
+- Return results to the parent agent
+
+## Using Subagents
+
+The main agent can delegate tasks using the Task tool:
+
+```
+Research the authentication patterns in this codebase
+```
+
+The AI will automatically spawn a subagent for research tasks.
+
+## Agent Definitions
+
+Define custom agents in `.ripperdoc/agents/`:
+
+```
+.ripperdoc/
+└── agents/
+    └── security-reviewer.md
+```
+
+### Agent Definition Format
+
+```markdown
+---
+name: security-reviewer
+description: Reviews code for security vulnerabilities
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+model: main
+---
+
+# Security Reviewer Agent
+
+You are a security expert reviewing code for vulnerabilities.
+
+## Focus Areas
+
+1. Input validation
+2. SQL injection
+3. XSS vulnerabilities
+4. Authentication issues
+5. Authorization flaws
+
+## Instructions
+
+1. Search for potentially dangerous patterns
+2. Analyze found code for vulnerabilities
+3. Report findings with severity levels
+```
+
+### Agent Options
+
+| Option | Description |
+|--------|-------------|
+| `name` | Agent identifier |
+| `description` | What this agent does |
+| `allowed-tools` | Tools the agent can use |
+| `model` | Model profile to use |
+| `max-turns` | Maximum conversation turns |
+
+## Built-in Agent Types
+
+### Research Agent
+
+Explores the codebase to answer questions:
+
+```
+Task: Find how user sessions are managed
+```
+
+### Code Review Agent
+
+Reviews code changes:
+
+```
+Task: Review the changes in the last commit for issues
+```
+
+### Test Agent
+
+Runs and analyzes tests:
+
+```
+Task: Run tests and fix any failures
+```
+
+## Creating Custom Agents
+
+### Step 1: Create Agent Definition
+
+```bash
+mkdir -p .ripperdoc/agents
+```
+
+Create `.ripperdoc/agents/my-agent.md`:
+
+```markdown
+---
+name: my-agent
+description: My specialized agent
+allowed-tools:
+  - Read
+  - Grep
+---
+
+# My Agent
+
+You specialize in [task]...
+
+## Instructions
+
+[Detailed instructions]
+```
+
+### Step 2: Use the Agent
+
+The main agent will automatically use your custom agent when appropriate, or you can explicitly request it:
+
+```
+Use the my-agent to analyze the database schema
+```
+
+## Managing Subagents
+
+### View Running Tasks
+
+```
+> /tasks
+```
+
+### View Agent Definitions
+
+```
+> /agents
+```
+
+## Best Practices
+
+1. **Scope appropriately**: Give agents only the tools they need
+2. **Clear instructions**: Be specific about what the agent should do
+3. **Limit turns**: Set max-turns to prevent runaway agents
+4. **Use for parallelization**: Run multiple agents for independent tasks
+5. **Review results**: Always review subagent outputs
+
+## Subagent Communication
+
+Subagents:
+- Receive task descriptions from the parent
+- Have access to the codebase
+- Return structured results
+- Cannot directly communicate with the user
+
+Results are returned to the main agent which can:
+- Summarize findings
+- Take action based on results
+- Delegate follow-up tasks

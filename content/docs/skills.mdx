@@ -1,0 +1,179 @@
+---
+title: Skills
+description: Extend Ripperdoc with reusable skill bundles
+---
+
+Skills are reusable instruction bundles that extend Ripperdoc's capabilities for specific tasks.
+
+## What are Skills?
+
+Skills provide:
+- Specialized instructions for the AI
+- Tool restrictions or allowances
+- Custom model hints
+- Domain-specific knowledge
+
+## Skill Locations
+
+Skills are loaded from:
+
+1. **User skills**: `~/.ripperdoc/skills/<name>/SKILL.md`
+2. **Project skills**: `.ripperdoc/skills/<name>/SKILL.md`
+
+## Using Skills
+
+Load a skill during a session:
+
+```
+> /skill pdf
+```
+
+Or invoke via the Skill tool:
+
+```
+Load the pdf skill to process this document
+```
+
+## Skill Structure
+
+A skill is a directory containing `SKILL.md`:
+
+```
+~/.ripperdoc/skills/pdf/
+├── SKILL.md
+└── reference.md (optional)
+```
+
+### SKILL.md Format
+
+```markdown
+---
+name: pdf
+description: Process and extract content from PDF files
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+model: main
+max-thinking-tokens: 8000
+---
+
+# PDF Processing Skill
+
+You are an expert at processing PDF files...
+
+## Instructions
+
+1. Use `pdftotext` for text extraction
+2. Use `pdftoppm` for image extraction
+...
+```
+
+### Frontmatter Options
+
+| Option | Description |
+|--------|-------------|
+| `name` | Skill identifier |
+| `description` | Brief description |
+| `allowed-tools` | List of allowed tools |
+| `model` | Model profile to use |
+| `max-thinking-tokens` | Override thinking tokens |
+| `disable-model-invocation` | Prevent model calls |
+
+## Built-in Skills
+
+Ripperdoc includes several example skills:
+
+### PDF Processing
+
+```
+> /skill pdf
+```
+
+Extract text, tables, and images from PDF files.
+
+### PPTX Presentations
+
+```
+> /skill pptx
+```
+
+Create and modify PowerPoint presentations.
+
+### XLSX Spreadsheets
+
+```
+> /skill xlsx
+```
+
+Work with Excel spreadsheets.
+
+## Creating Custom Skills
+
+### Step 1: Create the Directory
+
+```bash
+mkdir -p ~/.ripperdoc/skills/myskill
+```
+
+### Step 2: Write SKILL.md
+
+```markdown
+---
+name: myskill
+description: My custom skill
+allowed-tools:
+  - Read
+  - Edit
+  - Bash
+---
+
+# My Custom Skill
+
+You are an expert at [domain]...
+
+## Workflow
+
+1. First, analyze...
+2. Then, implement...
+3. Finally, verify...
+
+## Examples
+
+[Include examples of expected behavior]
+```
+
+### Step 3: Test the Skill
+
+```
+> /skill myskill
+```
+
+## Skill Best Practices
+
+1. **Be specific**: Clear instructions produce better results
+2. **Include examples**: Show expected input/output
+3. **Restrict tools**: Only allow necessary tools
+4. **Add references**: Include supporting documentation
+5. **Test thoroughly**: Verify skill behavior with various inputs
+
+## Project-Specific Skills
+
+Create project skills in `.ripperdoc/skills/`:
+
+```
+.ripperdoc/
+└── skills/
+    └── deploy/
+        └── SKILL.md
+```
+
+Project skills override user skills with the same name.
+
+## Listing Skills
+
+View available skills:
+
+```
+> /skills
+```

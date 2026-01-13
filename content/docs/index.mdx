@@ -1,0 +1,48 @@
+---
+title: Introduction
+description: What is Ripperdoc and why use it
+---
+
+Ripperdoc is an open-source, extensible AI coding agent that runs in your terminal. It's designed to help you write, refactor, and understand code through natural language conversations.
+
+## Why Ripperdoc?
+
+- **Multi-Model Support**: Works with Anthropic Claude, OpenAI, DeepSeek, Gemini, and any OpenAI-compatible API including local models
+- **Terminal Native**: Rich CLI interface with syntax highlighting, streaming responses, and real-time feedback
+- **Extensible**: Customize with hooks, skills, subagents, and MCP (Model Context Protocol) integration
+- **Privacy First**: Runs locally on your machine with your API keys
+- **Open Source**: Apache 2.0 licensed, fully transparent and customizable
+
+## Key Features
+
+### Powerful Tools
+
+Ripperdoc comes with 23 built-in tools for:
+- File operations (read, edit, write, multi-edit)
+- Code search (glob patterns, regex grep)
+- Shell command execution (with sandbox support)
+- Jupyter notebook editing
+- Task planning and tracking
+
+### Intelligent Permissions
+
+A sophisticated permission system that:
+- Prompts for approval on potentially destructive operations
+- Supports YOLO mode for trusted workflows
+- Allows fine-grained permission rules
+
+### Session Management
+
+- Persistent conversation history
+- Resume interrupted sessions
+- Automatic context compaction
+- Cost and token tracking
+
+## Getting Started
+
+```bash
+pip install ripperdoc
+ripperdoc --help
+```
+
+See the [Installation](/docs/installation) guide for detailed setup instructions, or jump to the [Quickstart](/docs/quickstart) to start using Ripperdoc immediately.

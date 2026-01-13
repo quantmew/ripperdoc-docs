@@ -1,0 +1,149 @@
+---
+title: Environment Variables
+description: Complete list of environment variables
+---
+
+Ripperdoc can be configured through environment variables.
+
+## API Keys
+
+### Provider API Keys
+
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | Anthropic Claude API key |
+| `OPENAI_API_KEY` | OpenAI API key |
+| `DEEPSEEK_API_KEY` | DeepSeek API key |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `OPENROUTER_API_KEY` | OpenRouter API key |
+| `MISTRAL_API_KEY` | Mistral API key |
+
+### API Endpoints
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ANTHROPIC_API_URL` | Anthropic API base URL | `https://api.anthropic.com` |
+| `OPENAI_BASE_URL` | OpenAI API base URL | `https://api.openai.com/v1` |
+| `OPENAI_API_BASE` | Alternative OpenAI base URL | - |
+
+## Behavior Settings
+
+### Timeouts and Retries
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_API_TIMEOUT` | API request timeout (seconds) | `120` |
+| `RIPPERDOC_MAX_RETRIES` | Maximum API retry attempts | `10` |
+
+### Context and Memory
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_MAX_QUERY_ITERATIONS` | Maximum query loop iterations | `1024` |
+| `RIPPERDOC_MESSAGE_WARNING_THRESHOLD` | Message count for warning | `500` |
+| `RIPPERDOC_MESSAGE_CRITICAL_THRESHOLD` | Message count for critical warning | `1000` |
+
+### File Operations
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_FILE_CACHE_MAX_ENTRIES` | Max cached file entries | `500` |
+| `RIPPERDOC_FILE_CACHE_MAX_MEMORY_MB` | Max file cache memory (MB) | `50` |
+| `RIPPERDOC_MAX_READ_FILE_SIZE_MB` | Max file size to read (MB) | `50` |
+
+### Bash Tool
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_BASH_TIMEOUT_MS` | Default bash timeout (ms) | `120000` |
+| `RIPPERDOC_BASH_MAX_TIMEOUT_MS` | Maximum bash timeout (ms) | `600000` |
+| `RIPPERDOC_BASH_MAX_OUTPUT_LENGTH` | Max output characters | `30000` |
+
+### Shell Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_SHELL` | Preferred shell | Auto-detected |
+| `RIPPERDOC_SHELL_PATH` | Path to shell executable | Auto-detected |
+
+## Agent Settings
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_AGENT_RUN_TTL_SEC` | Agent run time-to-live (seconds) | `3600` |
+
+## Logging
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_LOG_LEVEL` | Log level (DEBUG, INFO, WARNING, ERROR) | `INFO` |
+| `RIPPERDOC_LOG_FILE` | Path to log file | None |
+
+## Development
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_DEBUG` | Enable debug mode | `false` |
+| `RIPPERDOC_DEV_MODE` | Enable development mode | `false` |
+
+## Example .env File
+
+```bash
+# API Keys
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+
+# Timeouts
+RIPPERDOC_API_TIMEOUT=180
+RIPPERDOC_MAX_RETRIES=5
+
+# Bash settings
+RIPPERDOC_BASH_TIMEOUT_MS=300000
+
+# File settings
+RIPPERDOC_MAX_READ_FILE_SIZE_MB=100
+
+# Logging
+RIPPERDOC_LOG_LEVEL=DEBUG
+RIPPERDOC_LOG_FILE=/tmp/ripperdoc.log
+```
+
+## Loading Environment Variables
+
+### From Shell
+
+```bash
+export ANTHROPIC_API_KEY="your-key"
+ripperdoc
+```
+
+### From .env File
+
+Create a `.env` file in your project root:
+
+```bash
+ANTHROPIC_API_KEY=your-key
+```
+
+Then use a tool like `direnv` or source it manually:
+
+```bash
+source .env
+ripperdoc
+```
+
+### In Python SDK
+
+```python
+import os
+os.environ["ANTHROPIC_API_KEY"] = "your-key"
+
+from ripperdoc.sdk import query
+```
+
+## Security Notes
+
+1. **Never commit API keys** to version control
+2. **Use `.env.local`** for local overrides (add to `.gitignore`)
+3. **Rotate keys** if accidentally exposed
+4. **Use environment-specific keys** for different environments

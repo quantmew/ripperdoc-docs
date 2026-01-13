@@ -1,0 +1,201 @@
+---
+title: SDK Client Reference
+description: Detailed API reference for the Ripperdoc SDK
+---
+
+## RipperdocClient
+
+The main class for session-based interactions.
+
+### Constructor
+
+```python
+from ripperdoc.sdk import RipperdocClient
+
+client = RipperdocClient(
+    model: str = "main",
+    yolo_mode: bool = False,
+    max_thinking_tokens: int = 0,
+    tools: Optional[List[str]] = None,
+    system_prompt: Optional[str] = None,
+)
+```
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `model` | `str` | `"main"` | Model profile to use |
+| `yolo_mode` | `bool` | `False` | Skip permission prompts |
+| `max_thinking_tokens` | `int` | `0` | Max tokens for thinking mode |
+| `tools` | `List[str]` | `None` | Tools to enable (all if None) |
+| `system_prompt` | `str` | `None` | Custom system prompt |
+
+### Methods
+
+#### query
+
+Send a message and get a response.
+
+```python
+async def query(
+    self,
+    message: str,
+    stream: bool = False,
+) -> QueryResult
+```
+
+**Parameters:**
+- `message`: The user message
+- `stream`: Enable streaming responses
+
+**Returns:** `QueryResult` object
+
+#### close
+
+Clean up resources.
+
+```python
+async def close(self) -> None
+```
+
+### Context Manager
+
+Use as an async context manager:
+
+```python
+async with RipperdocClient() as client:
+    result = await client.query("Hello")
+```
+
+## query Function
+
+For one-shot queries without session management.
+
+```python
+from ripperdoc.sdk import query
+
+async def query(
+    message: str,
+    system_prompt: str = "",
+    model: str = "main",
+    tools: Optional[List[str]] = None,
+    max_thinking_tokens: int = 0,
+) -> QueryResult
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `message` | `str` | required | The query message |
+| `system_prompt` | `str` | `""` | System prompt |
+| `model` | `str` | `"main"` | Model profile |
+| `tools` | `List[str]` | `None` | Enabled tools |
+| `max_thinking_tokens` | `int` | `0` | Thinking mode tokens |
+
+## QueryResult
+
+Result object returned from queries.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `content` | `str` | Response text |
+| `tool_calls` | `List[ToolCall]` | Tools that were called |
+| `input_tokens` | `int` | Input token count |
+| `output_tokens` | `int` | Output token count |
+| `cost_usd` | `float` | Estimated cost |
+| `duration_ms` | `float` | Response time |
+
+## Examples
+
+### Basic Query
+
+```python
+from ripperdoc.sdk import query
+
+result = await query("What is 2 + 2?")
+print(result.content)  # "4"
+```
+
+### With Tools
+
+```python
+from ripperdoc.sdk import RipperdocClient
+
+client = RipperdocClient(
+    tools=["Read", "Glob"],
+    yolo_mode=True
+)
+
+result = await client.query("List all Python files")
+print(result.content)
+```
+
+### Thinking Mode
+
+```python
+from ripperdoc.sdk import query
+
+result = await query(
+    "Solve this complex problem step by step...",
+    max_thinking_tokens=8000,
+    model="reasoning"
+)
+```
+
+### Streaming
+
+```python
+from ripperdoc.sdk import RipperdocClient
+
+client = RipperdocClient()
+
+async for chunk in client.query("Write a long story", stream=True):
+    print(chunk, end="", flush=True)
+```
+
+### Error Handling
+
+```python
+from ripperdoc.sdk import RipperdocClient, RipperdocError
+
+try:
+    client = RipperdocClient()
+    result = await client.query("Do something")
+except RipperdocError as e:
+    print(f"Error: {e}")
+finally:
+    await client.close()
+```
+
+## Tool Access
+
+Control which tools are available:
+
+```python
+# Only file reading tools
+client = RipperdocClient(tools=["Read", "Glob", "Grep"])
+
+# All tools except shell
+all_tools = get_all_tool_names()
+safe_tools = [t for t in all_tools if t != "Bash"]
+client = RipperdocClient(tools=safe_tools)
+```
+
+## Custom System Prompts
+
+```python
+client = RipperdocClient(
+    system_prompt="""You are a code reviewer.
+    Focus on:
+    - Security issues
+    - Performance problems
+    - Code style
+    """
+)
+
+result = await client.query("Review the changes in src/")
+```

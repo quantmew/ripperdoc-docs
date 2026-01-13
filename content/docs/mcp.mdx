@@ -1,0 +1,186 @@
+---
+title: MCP Integration
+description: Connect to Model Context Protocol servers
+---
+
+Ripperdoc supports the Model Context Protocol (MCP) for connecting to external tools and resources.
+
+## What is MCP?
+
+MCP (Model Context Protocol) is a standard for:
+- Exposing tools to AI agents
+- Providing resources and context
+- Enabling agent-to-service communication
+
+## Configuration
+
+Configure MCP servers in `.ripperdoc/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/dir"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+### Server Types
+
+#### Stdio Servers
+
+```json
+{
+  "myserver": {
+    "command": "path/to/server",
+    "args": ["--flag", "value"],
+    "env": {
+      "VAR": "value"
+    }
+  }
+}
+```
+
+#### SSE Servers
+
+```json
+{
+  "myserver": {
+    "url": "http://localhost:3000/sse"
+  }
+}
+```
+
+## MCP Tools
+
+### ListMcpServers
+
+View connected MCP servers:
+
+```
+> List connected MCP servers
+```
+
+### ListMcpResources
+
+View available resources:
+
+```
+> List resources from the github server
+```
+
+### ReadMcpResource
+
+Read a specific resource:
+
+```
+> Read the README from github://repo/owner/readme
+```
+
+## Available MCP Servers
+
+### Official Servers
+
+| Server | Description |
+|--------|-------------|
+| `@modelcontextprotocol/server-filesystem` | File system access |
+| `@modelcontextprotocol/server-github` | GitHub integration |
+| `@modelcontextprotocol/server-postgres` | PostgreSQL access |
+| `@modelcontextprotocol/server-slack` | Slack integration |
+
+### Installation
+
+```bash
+npx -y @modelcontextprotocol/server-filesystem /path
+```
+
+## Dynamic MCP Tools
+
+When an MCP server provides tools, they become available to Ripperdoc:
+
+```json
+{
+  "mcpServers": {
+    "database": {
+      "command": "node",
+      "args": ["./db-server.js"]
+    }
+  }
+}
+```
+
+The tools from `database` server will be available as:
+- `mcp_database_query`
+- `mcp_database_insert`
+- etc.
+
+## Example: GitHub Integration
+
+### Configure
+
+`.ripperdoc/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+### Use
+
+```
+> List open issues in this repository
+> Create a PR for the current branch
+```
+
+## Managing MCP
+
+### View Status
+
+```
+> /mcp
+```
+
+### Reload Configuration
+
+Restart Ripperdoc to reload MCP configuration.
+
+## Best Practices
+
+1. **Secure credentials**: Use environment variables for tokens
+2. **Limit scope**: Only connect necessary servers
+3. **Monitor resources**: MCP servers consume resources
+4. **Use official servers**: Prefer well-maintained servers
+5. **Test locally**: Verify MCP servers work before production use
+
+## Troubleshooting
+
+### Server Not Connecting
+
+1. Check the command path is correct
+2. Verify required dependencies are installed
+3. Check environment variables are set
+4. Review server logs for errors
+
+### Tools Not Available
+
+1. Ensure server is running
+2. Check server implements tools correctly
+3. Restart Ripperdoc to reload

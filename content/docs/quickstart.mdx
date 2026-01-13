@@ -1,0 +1,97 @@
+---
+title: Quickstart
+description: Get up and running with Ripperdoc in 5 minutes
+---
+
+This guide will help you start using Ripperdoc in just a few minutes.
+
+## Step 1: Install
+
+```bash
+pip install ripperdoc
+```
+
+## Step 2: Set API Key
+
+```bash
+export ANTHROPIC_API_KEY="your-api-key"
+```
+
+Or for OpenAI:
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+```
+
+## Step 3: Start Ripperdoc
+
+Navigate to your project directory and run:
+
+```bash
+cd /path/to/your/project
+ripperdoc
+```
+
+## Step 4: Start Coding
+
+Now you can interact with Ripperdoc using natural language:
+
+```
+> Explain the structure of this project
+
+> Find all functions that handle user authentication
+
+> Add input validation to the signup form
+
+> Write tests for the User class
+```
+
+## Step 5: Understanding Permissions
+
+By default, Ripperdoc will ask for permission before:
+- Executing shell commands
+- Editing or creating files
+- Running potentially destructive operations
+
+You can approve individual actions or use `--yolo` mode to skip prompts:
+
+```bash
+ripperdoc --yolo
+```
+
+## Common Commands
+
+During a session, you can use slash commands:
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show available commands |
+| `/clear` | Clear conversation history |
+| `/tools` | List available tools |
+| `/status` | Show session status |
+| `/cost` | Show token usage and costs |
+| `/exit` | Exit the session |
+
+## Example Session
+
+```
+$ ripperdoc
+
+> What files are in this project?
+
+[Ripperdoc uses the Glob tool to list files]
+
+> Read the main.py file and explain what it does
+
+[Ripperdoc reads the file and provides an explanation]
+
+> Add error handling to the process_data function
+
+[Ripperdoc asks for permission, then edits the file]
+```
+
+## Next Steps
+
+- [Configuration](/docs/configuration) - Customize model settings and behavior
+- [Tools](/docs/tools) - Learn about available tools
+- [Hooks](/docs/hooks) - Automate with custom hooks

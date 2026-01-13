@@ -1,0 +1,251 @@
+---
+title: Architecture
+description: Technical architecture of Ripperdoc
+---
+
+This document describes the internal architecture of Ripperdoc.
+
+## Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         CLI Layer                            │
+│  (ripperdoc/cli/)                                           │
+│  - Terminal UI, Commands, User Interaction                  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        Core Layer                            │
+│  (ripperdoc/core/)                                          │
+│  - Query Loop, Tool Registry, Permissions, Hooks            │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+┌───────────────────┐ ┌─────────────┐ ┌─────────────────────┐
+│     Providers     │ │    Tools    │ │      Utilities      │
+│  (core/providers/)│ │  (tools/)   │ │      (utils/)       │
+│  - Anthropic      │ │  - Bash     │ │  - File Watch       │
+│  - OpenAI         │ │  - Read     │ │  - Session Mgmt     │
+│  - Gemini         │ │  - Edit     │ │  - Logging          │
+│  - DeepSeek       │ │  - Glob     │ │  - Permissions      │
+└───────────────────┘ │  - Grep     │ └─────────────────────┘
+                      │  - Task     │
+                      │  - ...      │
+                      └─────────────┘
+```
+
+## Core Components
+
+### Query Loop (`core/query.py`)
+
+The main query loop handles:
+
+1. Building the system prompt with tool definitions
+2. Sending messages to the LLM provider
+3. Parsing tool calls from responses
+4. Executing tools and collecting results
+5. Handling errors and context overflow
+
+```python
+async def query(messages, system_prompt, context, query_context):
+    for iteration in range(MAX_ITERATIONS):
+        # Build full prompt
+        full_prompt = build_full_system_prompt(...)
+
+        # Call LLM
+        response = await query_llm(messages, full_prompt, tools)
+
+        # Extract and execute tool calls
+        tool_calls = extract_tool_use_blocks(response)
+        for tool_call in tool_calls:
+            result = await execute_tool(tool_call)
+
+        # Continue or return based on response
+```
+
+### Tool System (`core/tool.py`)
+
+Tools follow a common interface:
+
+```python
+class Tool(Generic[TInput, TOutput]):
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def input_schema(self) -> type[TInput]: ...
+
+    async def validate_input(self, input_data, context) -> ValidationResult: ...
+
+    async def call(self, input_data, context) -> AsyncGenerator[ToolOutput]: ...
+
+    def needs_permissions(self, input_data) -> bool: ...
+```
+
+### Provider Abstraction (`core/providers/`)
+
+Providers normalize different LLM APIs:
+
+```python
+class ProviderClient:
+    async def call(
+        self,
+        model_profile: ModelProfile,
+        system_prompt: str,
+        normalized_messages: List[Dict],
+        tools: List[Tool],
+        **kwargs
+    ) -> ProviderResponse: ...
+```
+
+### Hook System (`core/hooks/`)
+
+Hooks intercept lifecycle events:
+
+```
+Event Flow:
+1. UserPromptSubmit → User sends message
+2. PreToolUse → Before tool execution
+3. PermissionRequest → When permission needed
+4. PostToolUse → After tool completes
+5. Stop → Agent finishes responding
+```
+
+## Data Flow
+
+### Message Flow
+
+```
+User Input
+    │
+    ▼
+┌────────────────┐
+│ CLI Input      │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐     ┌────────────────┐
+│ Hook: Submit   │────▶│ May modify     │
+└───────┬────────┘     │ or block       │
+        │              └────────────────┘
+        ▼
+┌────────────────┐
+│ Query Loop     │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ LLM Provider   │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Tool Execution │◀───── Hooks: Pre/Post
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Response       │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ CLI Output     │
+└────────────────┘
+```
+
+### Tool Execution Flow
+
+```
+Tool Call (from LLM)
+    │
+    ▼
+┌────────────────┐
+│ Resolve Tool   │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Parse Input    │ ← Pydantic validation
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ PreToolUse     │ ← Hook can block/modify
+│ Hook           │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Permission     │ ← May prompt user
+│ Check          │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Execute Tool   │ ← Yields progress/result
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ PostToolUse    │ ← Hook can add context
+│ Hook           │
+└────────────────┘
+```
+
+## Key Modules
+
+### `ripperdoc/cli/`
+
+- `cli.py` - Main entry point
+- `ui/` - Terminal UI components
+- `commands/` - Slash command implementations
+
+### `ripperdoc/core/`
+
+- `query.py` - Main query loop
+- `tool.py` - Tool base class
+- `permissions.py` - Permission checking
+- `config.py` - Configuration management
+- `providers/` - LLM provider implementations
+- `hooks/` - Hook system
+
+### `ripperdoc/tools/`
+
+23 tool implementations for file operations, search, execution, etc.
+
+### `ripperdoc/utils/`
+
+- `file_watch.py` - File change detection
+- `session_*.py` - Session management
+- `conversation_compaction.py` - Context compaction
+- `permissions/` - Permission utilities
+
+## Extension Points
+
+### Adding Providers
+
+1. Create `ripperdoc/core/providers/my_provider.py`
+2. Implement `ProviderClient` interface
+3. Register in provider factory
+
+### Adding Tools
+
+1. Create `ripperdoc/tools/my_tool.py`
+2. Extend `Tool` base class
+3. Register in `default_tools.py`
+
+### Adding Hooks
+
+1. Define hook event in `hooks/events.py`
+2. Implement handler in `hooks/executor.py`
+3. Integrate in query loop
+
+## Performance Considerations
+
+- **Streaming**: All LLM responses stream for responsiveness
+- **Caching**: File contents cached to avoid re-reading
+- **Compaction**: Automatic context compaction for long sessions
+- **Concurrency**: Safe tools run in parallel

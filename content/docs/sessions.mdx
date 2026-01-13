@@ -1,0 +1,129 @@
+---
+title: Sessions
+description: Managing conversation sessions and history
+---
+
+Ripperdoc maintains session history to enable context-aware conversations and session resumption.
+
+## Session Storage
+
+Sessions are stored in `~/.ripperdoc/sessions/` as JSON files containing:
+
+- Full conversation transcript
+- Tool execution history
+- Token usage and costs
+- Session metadata
+
+## Resuming Sessions
+
+Resume a previous session:
+
+```bash
+ripperdoc --resume
+```
+
+This opens an interactive picker to select from recent sessions.
+
+Resume a specific session:
+
+```bash
+ripperdoc --resume SESSION_ID
+```
+
+## Session Commands
+
+### View Status
+
+```
+> /status
+```
+
+Shows current session information including:
+- Message count
+- Token usage
+- Duration
+- Tool calls
+
+### View Statistics
+
+```
+> /stats
+```
+
+Shows detailed session statistics:
+- Input/output tokens
+- Cache hits
+- Cost breakdown
+- Tool usage breakdown
+
+### View Costs
+
+```
+> /cost
+```
+
+Shows token usage and estimated costs.
+
+## Context Management
+
+### Clearing History
+
+Clear the current conversation:
+
+```
+> /clear
+```
+
+This starts a fresh conversation while keeping the session.
+
+### Compacting History
+
+When the context window fills up, Ripperdoc automatically compacts the conversation by summarizing older messages.
+
+Manually trigger compaction:
+
+```
+> /compact
+```
+
+## Session Configuration
+
+Configure session behavior in `.ripperdoc/config.json`:
+
+```json
+{
+  "memory": {
+    "compact_after_turns": 50
+  }
+}
+```
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `compact_after_turns` | Turns before auto-compact | 50 |
+
+## Context Length Handling
+
+When the context window is exceeded:
+
+1. Ripperdoc detects the context length error
+2. Automatically compacts older messages
+3. Retries the request with the compacted context
+4. Notifies you if compaction was performed
+
+## Exporting Sessions
+
+Session files are stored as JSON and can be:
+
+- Backed up manually
+- Analyzed for usage patterns
+- Shared for debugging
+
+## Best Practices
+
+1. **Use `/clear` for new tasks**: Start fresh when switching to unrelated work
+2. **Monitor `/cost` for long sessions**: Keep track of token usage
+3. **Resume when interrupted**: Use `--resume` to continue interrupted work
+4. **Compact proactively**: Use `/compact` if responses slow down

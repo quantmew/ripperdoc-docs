@@ -1,0 +1,144 @@
+---
+title: Configuration
+description: Configuring Ripperdoc models and behavior
+---
+
+Ripperdoc can be configured through configuration files or environment variables.
+
+## Configuration Files
+
+Configuration is loaded in order of precedence:
+
+1. **Global**: `~/.ripperdoc.json`
+2. **Project**: `.ripperdoc/config.json`
+
+Project configuration overrides global configuration.
+
+## Model Configuration
+
+### Basic Model Setup
+
+```json
+{
+  "models": [
+    {
+      "name": "main",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-20250514",
+      "api_key": "${ANTHROPIC_API_KEY}"
+    }
+  ]
+}
+```
+
+### Multiple Models
+
+You can define multiple model profiles:
+
+```json
+{
+  "models": [
+    {
+      "name": "main",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-20250514"
+    },
+    {
+      "name": "fast",
+      "provider": "openai",
+      "model": "gpt-4o-mini"
+    },
+    {
+      "name": "local",
+      "provider": "openai",
+      "api_base": "http://localhost:11434/v1",
+      "model": "llama3.2"
+    }
+  ]
+}
+```
+
+Switch between models using the `/models` command or `--model` flag:
+
+```bash
+ripperdoc --model fast
+```
+
+### Provider Options
+
+| Provider | Required Env Var | API Base |
+|----------|-----------------|----------|
+| `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
+| `openai` | `OPENAI_API_KEY` | `https://api.openai.com/v1` |
+| `deepseek` | `DEEPSEEK_API_KEY` | `https://api.deepseek.com` |
+| `gemini` | `GEMINI_API_KEY` | Google AI API |
+
+### Custom API Endpoints
+
+For OpenAI-compatible APIs:
+
+```json
+{
+  "models": [
+    {
+      "name": "custom",
+      "provider": "openai",
+      "api_base": "https://your-api-endpoint.com/v1",
+      "api_key": "${CUSTOM_API_KEY}",
+      "model": "your-model-name"
+    }
+  ]
+}
+```
+
+## Thinking Mode
+
+For models that support extended thinking (DeepSeek, Claude with extended thinking):
+
+```json
+{
+  "models": [
+    {
+      "name": "reasoning",
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "thinking_mode": "deepseek"
+    }
+  ]
+}
+```
+
+## Permission Settings
+
+```json
+{
+  "permissions": {
+    "mode": "default",
+    "rules": []
+  }
+}
+```
+
+See [Permissions](/docs/permissions) for detailed configuration.
+
+## CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--model NAME` | Use a specific model profile |
+| `--yolo` | Skip permission prompts |
+| `--verbose` | Enable verbose output |
+| `--max-thinking-tokens N` | Set max thinking tokens |
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | Anthropic API key |
+| `OPENAI_API_KEY` | OpenAI API key |
+| `DEEPSEEK_API_KEY` | DeepSeek API key |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `RIPPERDOC_MAX_RETRIES` | Max API retries (default: 10) |
+| `RIPPERDOC_API_TIMEOUT` | API timeout in seconds (default: 120) |
+
+See [Environment Variables](/docs/environment-variables) for a complete list.

@@ -1,0 +1,125 @@
+---
+title: Permissions
+description: Understanding and configuring the permission system
+---
+
+Ripperdoc includes a permission system to protect against unintended operations.
+
+## How Permissions Work
+
+By default, Ripperdoc prompts for approval before:
+
+- Executing shell commands
+- Editing or writing files
+- Running potentially destructive operations
+
+When a permission prompt appears, you can:
+
+- **y/yes**: Allow the operation
+- **n/no**: Deny the operation
+- **a/always**: Always allow this type of operation
+
+## YOLO Mode
+
+Skip all permission prompts with YOLO mode:
+
+```bash
+ripperdoc --yolo
+```
+
+**Warning**: Use YOLO mode only in trusted environments where you're comfortable with the AI making changes without confirmation.
+
+## Permission Rules
+
+Configure permission rules in `.ripperdoc/config.json`:
+
+```json
+{
+  "permissions": {
+    "mode": "default",
+    "rules": [
+      {
+        "tool": "Bash",
+        "pattern": "npm test",
+        "action": "allow"
+      },
+      {
+        "tool": "Edit",
+        "path": "*.md",
+        "action": "allow"
+      },
+      {
+        "tool": "Bash",
+        "pattern": "rm -rf",
+        "action": "deny"
+      }
+    ]
+  }
+}
+```
+
+### Rule Properties
+
+| Property | Description |
+|----------|-------------|
+| `tool` | Tool name to match |
+| `pattern` | Command or path pattern (supports glob) |
+| `action` | `allow`, `deny`, or `ask` |
+
+### Rule Actions
+
+- **allow**: Automatically approve matching operations
+- **deny**: Automatically reject matching operations
+- **ask**: Always prompt for this operation
+
+## Read-Only Operations
+
+Some operations are automatically allowed as read-only:
+
+- `Glob` - Finding files
+- `Grep` - Searching content
+- `Read` - Reading files
+- `LS` - Listing directories
+- Shell commands: `ls`, `cat`, `head`, `tail`, `grep`, `find` (without redirects)
+
+## Sandbox Mode
+
+The Bash tool supports sandbox mode for read-only shell operations:
+
+```json
+{
+  "command": "ls -la",
+  "sandbox": true
+}
+```
+
+Sandbox mode:
+- Prevents filesystem writes
+- Blocks network access
+- Runs without permission prompts
+
+## Working with Sensitive Directories
+
+Ripperdoc will prompt for confirmation when accessing sensitive directories:
+
+- `/usr`, `/etc`, `/bin`, `/sbin`
+- System configuration directories
+- Other user home directories
+
+## Managing Permissions
+
+Use the `/permissions` command to view and manage permissions:
+
+```
+> /permissions list
+> /permissions add allow Bash "npm *"
+> /permissions remove 1
+```
+
+## Best Practices
+
+1. **Start with defaults**: Use the default permission system until you understand your workflow
+2. **Allow specific commands**: Create allow rules for frequently used safe commands
+3. **Deny dangerous patterns**: Explicitly deny patterns like `rm -rf /`
+4. **Use sandbox for exploration**: Use sandbox mode when exploring unfamiliar codebases
+5. **Review before YOLO**: Only use YOLO mode after reviewing what Ripperdoc will do

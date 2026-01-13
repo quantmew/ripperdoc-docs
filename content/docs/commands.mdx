@@ -1,0 +1,261 @@
+---
+title: Commands Reference
+description: Complete list of slash commands
+---
+
+Ripperdoc provides slash commands for managing sessions and configuration.
+
+## General Commands
+
+### /help
+
+Show available commands and usage information.
+
+```
+> /help
+> /help tools
+```
+
+### /exit
+
+Exit the current session.
+
+```
+> /exit
+```
+
+### /clear
+
+Clear the conversation history and start fresh.
+
+```
+> /clear
+```
+
+## Session Commands
+
+### /status
+
+Show current session status including message count, tokens, and duration.
+
+```
+> /status
+```
+
+### /stats
+
+Show detailed session statistics.
+
+```
+> /stats
+```
+
+### /cost
+
+Show token usage and estimated costs.
+
+```
+> /cost
+```
+
+### /compact
+
+Manually compact the conversation to reduce context size.
+
+```
+> /compact
+```
+
+### /resume
+
+Resume a previous session (when starting Ripperdoc).
+
+```bash
+ripperdoc --resume
+```
+
+## Configuration Commands
+
+### /config
+
+View or modify configuration.
+
+```
+> /config
+> /config set model.timeout 180
+```
+
+### /models
+
+List and switch between model profiles.
+
+```
+> /models
+> /models use fast
+```
+
+## Tool Commands
+
+### /tools
+
+List available tools.
+
+```
+> /tools
+```
+
+### /permissions
+
+Manage permission rules.
+
+```
+> /permissions
+> /permissions list
+> /permissions add allow Bash "npm test"
+```
+
+## Extension Commands
+
+### /hooks
+
+Manage hooks configuration.
+
+```
+> /hooks
+> /hooks list
+> /hooks reload
+```
+
+### /skills
+
+List available skills.
+
+```
+> /skills
+```
+
+### /skill
+
+Load a skill.
+
+```
+> /skill pdf
+> /skill pptx
+```
+
+### /agents
+
+List agent definitions.
+
+```
+> /agents
+```
+
+### /tasks
+
+List running subagent tasks.
+
+```
+> /tasks
+```
+
+### /mcp
+
+Manage MCP server connections.
+
+```
+> /mcp
+```
+
+## Task Management
+
+### /todos
+
+View the todo list.
+
+```
+> /todos
+```
+
+### /todo
+
+Add or manage todo items.
+
+```
+> /todo add Implement feature X
+> /todo done 1
+```
+
+## Memory Commands
+
+### /memory
+
+View and manage conversation memory.
+
+```
+> /memory
+```
+
+### /context
+
+View current context information.
+
+```
+> /context
+```
+
+## Diagnostics
+
+### /doctor
+
+Run diagnostics to check configuration and connectivity.
+
+```
+> /doctor
+```
+
+## Custom Commands
+
+Define custom commands in `.ripperdoc/commands.json`:
+
+```json
+{
+  "commands": {
+    "test": "Run npm test and report results",
+    "deploy": "Deploy to staging environment",
+    "review": "Review code in $1 for issues"
+  }
+}
+```
+
+Use custom commands:
+
+```
+> /test
+> /review src/api.py
+```
+
+## Command Shortcuts
+
+Some commands have shortcuts:
+
+| Command | Shortcut |
+|---------|----------|
+| `/help` | `/h` |
+| `/exit` | `/q` |
+| `/clear` | `/c` |
+| `/status` | `/s` |
+
+## Getting Help
+
+For help on any command:
+
+```
+> /help <command>
+```
+
+For example:
+
+```
+> /help permissions
+```

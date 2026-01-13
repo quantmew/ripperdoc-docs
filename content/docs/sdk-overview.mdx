@@ -1,0 +1,100 @@
+---
+title: SDK Overview
+description: Using Ripperdoc as a Python library
+---
+
+Ripperdoc can be used as a Python SDK for building AI-powered applications.
+
+## Installation
+
+```bash
+pip install ripperdoc
+```
+
+## Quick Start
+
+### One-Shot Query
+
+For simple, single-turn queries:
+
+```python
+from ripperdoc.sdk import query
+
+result = await query(
+    "Explain what this function does",
+    system_prompt="You are a helpful coding assistant.",
+    model="main"
+)
+print(result.content)
+```
+
+### Session-Based Client
+
+For multi-turn conversations:
+
+```python
+from ripperdoc.sdk import RipperdocClient
+
+client = RipperdocClient(
+    model="main",
+    yolo_mode=True
+)
+
+# Start a conversation
+response = await client.query("What files are in this project?")
+print(response.content)
+
+# Continue the conversation
+response = await client.query("Read the main.py file")
+print(response.content)
+
+# Clean up
+await client.close()
+```
+
+## Use Cases
+
+### Code Analysis
+
+```python
+from ripperdoc.sdk import query
+
+analysis = await query(
+    f"Analyze this code for security issues:\n\n```python\n{code}\n```",
+    system_prompt="You are a security expert."
+)
+```
+
+### Automated Refactoring
+
+```python
+from ripperdoc.sdk import RipperdocClient
+
+async with RipperdocClient(yolo_mode=True) as client:
+    await client.query("Find all deprecated API calls")
+    await client.query("Update them to use the new API")
+```
+
+### Documentation Generation
+
+```python
+from ripperdoc.sdk import query
+
+docs = await query(
+    "Generate API documentation for all public functions in src/api/",
+    tools=["Read", "Glob", "Grep"]
+)
+```
+
+## SDK Features
+
+- **Async/await support**: Native async Python API
+- **Tool access**: Use any Ripperdoc tool
+- **Session management**: Maintain conversation context
+- **Token tracking**: Monitor usage and costs
+- **Custom prompts**: Full control over system prompts
+
+## Next Steps
+
+- [SDK Client Reference](/docs/sdk-client) - Detailed API reference
+- [Examples](https://github.com/anthropics/ripperdoc/tree/main/examples) - Example scripts

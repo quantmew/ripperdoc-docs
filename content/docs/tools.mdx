@@ -1,0 +1,178 @@
+---
+title: Tools
+description: Built-in tools available in Ripperdoc
+---
+
+Ripperdoc comes with 23 built-in tools that enable the AI to interact with your codebase and system.
+
+## File Operations
+
+### Read
+
+Read file contents with optional line range.
+
+```
+Read file: /path/to/file.py
+Read lines 10-50: /path/to/file.py
+```
+
+### Edit
+
+Replace text in a file using exact string matching.
+
+```
+Edit file: /path/to/file.py
+Replace "old_text" with "new_text"
+```
+
+### Write
+
+Create or overwrite a file.
+
+```
+Write to: /path/to/new_file.py
+Content: [file contents]
+```
+
+### MultiEdit
+
+Perform multiple edits in a single operation.
+
+### NotebookEdit
+
+Edit Jupyter notebook cells (`.ipynb` files).
+
+## Search Tools
+
+### Glob
+
+Find files matching a pattern.
+
+```
+Find all Python files: **/*.py
+Find test files: tests/**/*_test.py
+```
+
+### Grep
+
+Search file contents using regex.
+
+```
+Search for "def process": src/**/*.py
+Find TODO comments: rg "TODO|FIXME"
+```
+
+## Shell Execution
+
+### Bash
+
+Execute shell commands with timeout and sandbox support.
+
+```
+Run: npm test
+Run in sandbox: ls -la (read-only)
+Run in background: npm run build
+```
+
+Features:
+- Real-time output streaming
+- Timeout configuration
+- Sandbox mode for read-only operations
+- Background execution
+
+### BashOutput
+
+Get output from background shell commands.
+
+### KillBash
+
+Terminate running background commands.
+
+## Navigation
+
+### LS
+
+List directory contents.
+
+```
+List: /path/to/directory
+```
+
+## Planning & Tracking
+
+### TodoRead / TodoWrite
+
+Manage persistent todo lists for the current project.
+
+```
+Create todo: Implement user authentication
+Mark complete: #1
+```
+
+### EnterPlanMode / ExitPlanMode
+
+Enter planning mode to design implementation before writing code.
+
+## Interaction
+
+### AskUserQuestion
+
+Ask the user for clarification or choices.
+
+## Subagents
+
+### Task
+
+Delegate tasks to specialized subagents.
+
+```
+Run research task: Find all API endpoints
+Run code review: Check for security issues
+```
+
+## Extensions
+
+### Skill
+
+Load and execute skill bundles.
+
+```
+Load skill: pdf
+Load skill: pptx
+```
+
+### ToolSearch
+
+Find relevant tools for a task.
+
+## MCP Integration
+
+### ListMcpServers
+
+List connected MCP servers.
+
+### ListMcpResources
+
+List resources from MCP servers.
+
+### ReadMcpResource
+
+Read a resource from an MCP server.
+
+## Tool Permissions
+
+Most tools require permission before executing. You can:
+
+1. Approve individual operations
+2. Use `--yolo` mode to skip prompts
+3. Configure permission rules in `.ripperdoc/config.json`
+
+See [Permissions](/docs/permissions) for details.
+
+## Viewing Available Tools
+
+Use the `/tools` command to see all available tools:
+
+```
+> /tools
+```

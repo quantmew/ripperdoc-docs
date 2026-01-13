@@ -1,0 +1,201 @@
+---
+title: Hooks
+description: Automate workflows with custom hooks
+---
+
+Hooks let you execute custom scripts at various points in Ripperdoc's lifecycle.
+
+## Hook Events
+
+| Event | Description |
+|-------|-------------|
+| `PreToolUse` | Before a tool executes |
+| `PostToolUse` | After a tool completes |
+| `PermissionRequest` | When permission is requested |
+| `UserPromptSubmit` | When user submits a message |
+| `Notification` | For status notifications |
+| `Stop` | When the agent completes |
+| `SessionStart` | When a session begins |
+| `SessionEnd` | When a session ends |
+
+## Configuration Files
+
+Hooks are configured in JSON files (loaded in order):
+
+1. `~/.ripperdoc/hooks.json` - Global hooks
+2. `.ripperdoc/hooks.json` - Project hooks
+3. `.ripperdoc/hooks.local.json` - Local hooks (gitignored)
+
+## Hook Types
+
+### Command Hooks
+
+Execute shell commands:
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "type": "command",
+      "matcher": {
+        "tool_name": "Bash"
+      },
+      "command": "echo 'Bash command completed' >> /tmp/ripperdoc.log"
+    }
+  ]
+}
+```
+
+### Prompt Hooks
+
+Use an LLM to process the hook:
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "type": "prompt",
+      "matcher": {
+        "tool_name": "Edit"
+      },
+      "prompt": "Review this edit for security issues"
+    }
+  ]
+}
+```
+
+## Matchers
+
+Control when hooks run:
+
+```json
+{
+  "matcher": {
+    "tool_name": "Bash",
+    "tool_name_regex": "^(Bash|Edit)$",
+    "input_contains": "npm",
+    "path_pattern": "*.py"
+  }
+}
+```
+
+| Matcher | Description |
+|---------|-------------|
+| `tool_name` | Exact tool name |
+| `tool_name_regex` | Regex pattern for tool name |
+| `input_contains` | Input must contain string |
+| `path_pattern` | Glob pattern for file paths |
+
+## Hook Decisions
+
+Hooks can return decisions to control execution:
+
+```json
+{
+  "decision": "allow",
+  "message": "Approved by hook"
+}
+```
+
+| Decision | Effect |
+|----------|--------|
+| `allow` | Proceed with operation |
+| `deny` | Block the operation |
+| `ask` | Prompt user for confirmation |
+| `block` | Block and stop processing |
+
+## Examples
+
+### Logging Tool Usage
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "type": "command",
+      "command": "echo '[$(date)] Tool: $TOOL_NAME' >> ~/.ripperdoc/tool.log"
+    }
+  ]
+}
+```
+
+### Protect Sensitive Files
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "type": "command",
+      "matcher": {
+        "tool_name": "Edit",
+        "path_pattern": "*.env*"
+      },
+      "command": "echo '{\"decision\": \"deny\", \"message\": \"Cannot edit .env files\"}'"
+    }
+  ]
+}
+```
+
+### Desktop Notifications
+
+```json
+{
+  "hooks": [
+    {
+      "event": "Notification",
+      "type": "command",
+      "command": "notify-send 'Ripperdoc' '$MESSAGE'"
+    }
+  ]
+}
+```
+
+### Auto-format on Edit
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "type": "command",
+      "matcher": {
+        "tool_name": "Edit",
+        "path_pattern": "*.py"
+      },
+      "command": "black $FILE_PATH 2>/dev/null || true"
+    }
+  ]
+}
+```
+
+## Environment Variables
+
+Hooks receive context via environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `TOOL_NAME` | Name of the tool |
+| `TOOL_INPUT` | JSON-encoded tool input |
+| `FILE_PATH` | File path (for file operations) |
+| `MESSAGE` | Notification message |
+| `SESSION_ID` | Current session ID |
+
+## Managing Hooks
+
+Use the `/hooks` command:
+
+```
+> /hooks list
+> /hooks reload
+```
+
+## Best Practices
+
+1. **Test hooks carefully**: Use logging to debug hook behavior
+2. **Keep hooks fast**: Slow hooks impact responsiveness
+3. **Use local hooks for experiments**: `.ripperdoc/hooks.local.json` is gitignored
+4. **Handle errors gracefully**: Hooks should not crash Ripperdoc

@@ -1,0 +1,27 @@
+{
+  "pages": [
+    "---Getting Started---",
+    "index",
+    "installation",
+    "quickstart",
+    "configuration",
+    "---Core Concepts---",
+    "tools",
+    "permissions",
+    "sessions",
+    "---Features---",
+    "hooks",
+    "skills",
+    "subagents",
+    "mcp",
+    "---SDK---",
+    "sdk-overview",
+    "sdk-client",
+    "---Reference---",
+    "commands",
+    "environment-variables",
+    "---Contributing---",
+    "contributing",
+    "architecture"
+  ]
+}
