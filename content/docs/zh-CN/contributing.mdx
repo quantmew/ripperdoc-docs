@@ -1,0 +1,196 @@
+---
+title: 贡献
+description: 如何为 Ripperdoc 贡献
+---
+
+欢迎为 Ripperdoc 贡献！本指南将帮助你快速上手。
+
+## 开始前
+
+### 前置条件
+
+- Python 3.10+
+- Git
+- GitHub 账号
+
+### Fork 与 Clone
+
+1. 在 GitHub 上 fork 仓库
+2. 克隆你的 fork：
+
+```bash
+git clone https://github.com/YOUR_USERNAME/ripperdoc.git
+cd ripperdoc
+```
+
+### 开发环境搭建
+
+1. 创建虚拟环境：
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. 以开发模式安装：
+
+```bash
+pip install -e ".[dev]"
+```
+
+3. 安装 pre-commit hooks：
+
+```bash
+pre-commit install
+```
+
+## 开发流程
+
+### 运行测试
+
+```bash
+pytest
+```
+
+运行特定测试：
+
+```bash
+pytest tests/test_tools.py
+pytest tests/test_hooks.py -k "test_pre_tool_use"
+```
+
+### 代码风格
+
+我们使用：
+- **Black** 格式化
+- **Ruff** 进行 lint
+- **MyPy** 类型检查
+
+运行全部检查：
+
+```bash
+black .
+ruff check .
+mypy ripperdoc
+```
+
+### 修改代码
+
+1. 创建分支：
+
+```bash
+git checkout -b feature/my-feature
+```
+
+2. 修改代码
+3. 为新功能编写测试
+4. 运行测试与 lint
+5. 使用清晰的提交信息：
+
+```bash
+git commit -m "feat: add new feature X"
+```
+
+## 贡献类型
+
+### 修复 Bug
+
+1. 先查看是否已有 issue
+2. 如无则创建 issue
+3. 在 PR 中引用对应 issue
+
+### 新功能
+
+1. 先创建 issue 讨论需求
+2. 等待反馈后再实现
+3. 遵循已有代码模式
+
+### 文档
+
+文档改进永远欢迎：
+- 修复错别字
+- 改善说明
+- 增加示例
+- 翻译文档
+
+### 新工具
+
+添加新工具：
+
+1. 创建 `ripperdoc/tools/my_tool.py`
+2. 实现 `Tool` 接口
+3. 在 `ripperdoc/core/default_tools.py` 注册
+4. 在 `tests/test_my_tool.py` 添加测试
+5. 在 `docs/` 中补充文档
+
+## Pull Request 流程
+
+1. 需要时更新文档
+2. 为新功能添加测试
+3. 确保所有测试通过
+4. 更新 CHANGELOG.md
+5. 提交 PR 并写清楚描述
+
+### PR 标题格式
+
+使用 conventional commits：
+- `feat:` 新功能
+- `fix:` Bug 修复
+- `docs:` 文档
+- `test:` 测试
+- `refactor:` 重构
+- `chore:` 维护
+
+### PR 描述模板
+
+```markdown
+## Description
+[What does this PR do?]
+
+## Related Issues
+Fixes #123
+
+## Changes
+- Change 1
+- Change 2
+
+## Testing
+[How was this tested?]
+
+## Checklist
+- [ ] Tests added
+- [ ] Documentation updated
+- [ ] CHANGELOG updated
+```
+
+## 代码规范
+
+### Python 风格
+
+- 遵循 PEP 8
+- 使用类型注解
+- 为公共函数写 docstring
+- 函数保持简洁、聚焦
+
+### 错误处理
+
+- 使用具体的异常类型
+- 合理记录错误日志
+- 提供清晰的错误信息
+
+### 测试
+
+- 为新代码写单元测试
+- 使用 pytest fixtures
+- Mock 外部依赖
+- 尽量提高覆盖率
+
+## 获取帮助
+
+- 有问题就提 issue
+- 在 GitHub 讨论区交流
+- 查看已有 issue 与 PR
+
+## 许可证
+
+贡献即表示同意你的贡献遵循 Apache 2.0 License。

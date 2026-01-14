@@ -1,0 +1,144 @@
+---
+title: 配置
+description: 配置 Ripperdoc 的模型与行为
+---
+
+Ripperdoc 可以通过配置文件或环境变量进行设置。
+
+## 配置文件
+
+配置按优先级顺序加载：
+
+1. **全局**：`~/.ripperdoc.json`
+2. **项目**：`.ripperdoc/config.json`
+
+项目配置会覆盖全局配置。
+
+## 模型配置
+
+### 基础模型设置
+
+```json
+{
+  "models": [
+    {
+      "name": "main",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-20250514",
+      "api_key": "${ANTHROPIC_API_KEY}"
+    }
+  ]
+}
+```
+
+### 多模型
+
+可以定义多个模型配置：
+
+```json
+{
+  "models": [
+    {
+      "name": "main",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-20250514"
+    },
+    {
+      "name": "fast",
+      "provider": "openai",
+      "model": "gpt-4o-mini"
+    },
+    {
+      "name": "local",
+      "provider": "openai",
+      "api_base": "http://localhost:11434/v1",
+      "model": "llama3.2"
+    }
+  ]
+}
+```
+
+使用 `/models` 命令或 `--model` 参数切换模型：
+
+```bash
+ripperdoc --model fast
+```
+
+### 提供商选项
+
+| Provider | 必需环境变量 | API Base |
+|----------|-----------------|----------|
+| `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
+| `openai` | `OPENAI_API_KEY` | `https://api.openai.com/v1` |
+| `deepseek` | `DEEPSEEK_API_KEY` | `https://api.deepseek.com` |
+| `gemini` | `GEMINI_API_KEY` | Google AI API |
+
+### 自定义 API 端点
+
+针对 OpenAI 兼容接口：
+
+```json
+{
+  "models": [
+    {
+      "name": "custom",
+      "provider": "openai",
+      "api_base": "https://your-api-endpoint.com/v1",
+      "api_key": "${CUSTOM_API_KEY}",
+      "model": "your-model-name"
+    }
+  ]
+}
+```
+
+## Thinking 模式
+
+针对支持扩展思考的模型（DeepSeek、带扩展思考的 Claude）：
+
+```json
+{
+  "models": [
+    {
+      "name": "reasoning",
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "thinking_mode": "deepseek"
+    }
+  ]
+}
+```
+
+## 权限设置
+
+```json
+{
+  "permissions": {
+    "mode": "default",
+    "rules": []
+  }
+}
+```
+
+详细配置参见 [权限](/zh-CN/docs/permissions)。
+
+## CLI 参数
+
+| 参数 | 说明 |
+|--------|-------------|
+| `--model NAME` | 使用指定模型配置 |
+| `--yolo` | 跳过权限确认 |
+| `--verbose` | 启用详细输出 |
+| `--max-thinking-tokens N` | 设置最大思考 token 数 |
+
+## 环境变量
+
+| 变量 | 说明 |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | Anthropic API key |
+| `OPENAI_API_KEY` | OpenAI API key |
+| `DEEPSEEK_API_KEY` | DeepSeek API key |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `RIPPERDOC_MAX_RETRIES` | API 最大重试次数（默认：10） |
+| `RIPPERDOC_API_TIMEOUT` | API 超时时间（秒，默认：120） |
+
+完整列表参见 [环境变量](/zh-CN/docs/environment-variables)。

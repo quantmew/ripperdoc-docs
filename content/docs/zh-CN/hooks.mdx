@@ -1,0 +1,201 @@
+---
+title: Hooks
+description: 用自定义 hooks 自动化工作流
+---
+
+Hooks 允许你在 Ripperdoc 生命周期的不同阶段执行自定义脚本。
+
+## Hook 事件
+
+| 事件 | 说明 |
+|-------|-------------|
+| `PreToolUse` | 工具执行前 |
+| `PostToolUse` | 工具完成后 |
+| `PermissionRequest` | 请求权限时 |
+| `UserPromptSubmit` | 用户提交消息时 |
+| `Notification` | 状态通知 |
+| `Stop` | 代理完成时 |
+| `SessionStart` | 会话开始时 |
+| `SessionEnd` | 会话结束时 |
+
+## 配置文件
+
+Hooks 在以下 JSON 文件中配置（按顺序加载）：
+
+1. `~/.ripperdoc/hooks.json` - 全局 hooks
+2. `.ripperdoc/hooks.json` - 项目 hooks
+3. `.ripperdoc/hooks.local.json` - 本地 hooks（已在 gitignore 中）
+
+## Hook 类型
+
+### Command Hooks
+
+执行 shell 命令：
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "type": "command",
+      "matcher": {
+        "tool_name": "Bash"
+      },
+      "command": "echo 'Bash command completed' >> /tmp/ripperdoc.log"
+    }
+  ]
+}
+```
+
+### Prompt Hooks
+
+使用 LLM 处理 hook：
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "type": "prompt",
+      "matcher": {
+        "tool_name": "Edit"
+      },
+      "prompt": "Review this edit for security issues"
+    }
+  ]
+}
+```
+
+## 匹配器（Matchers）
+
+控制 hook 何时运行：
+
+```json
+{
+  "matcher": {
+    "tool_name": "Bash",
+    "tool_name_regex": "^(Bash|Edit)$",
+    "input_contains": "npm",
+    "path_pattern": "*.py"
+  }
+}
+```
+
+| 匹配器 | 说明 |
+|---------|-------------|
+| `tool_name` | 精确工具名 |
+| `tool_name_regex` | 工具名正则表达式 |
+| `input_contains` | 输入必须包含该字符串 |
+| `path_pattern` | 文件路径 glob 模式 |
+
+## Hook 决策
+
+Hooks 可返回决策以控制执行：
+
+```json
+{
+  "decision": "allow",
+  "message": "Approved by hook"
+}
+```
+
+| 决策 | 作用 |
+|----------|--------|
+| `allow` | 继续执行 |
+| `deny` | 阻止操作 |
+| `ask` | 询问用户确认 |
+| `block` | 阻止并停止处理 |
+
+## 示例
+
+### 记录工具使用
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "type": "command",
+      "command": "echo '[$(date)] Tool: $TOOL_NAME' >> ~/.ripperdoc/tool.log"
+    }
+  ]
+}
+```
+
+### 保护敏感文件
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "type": "command",
+      "matcher": {
+        "tool_name": "Edit",
+        "path_pattern": "*.env*"
+      },
+      "command": "echo '{\"decision\": \"deny\", \"message\": \"Cannot edit .env files\"}'"
+    }
+  ]
+}
+```
+
+### 桌面通知
+
+```json
+{
+  "hooks": [
+    {
+      "event": "Notification",
+      "type": "command",
+      "command": "notify-send 'Ripperdoc' '$MESSAGE'"
+    }
+  ]
+}
+```
+
+### 编辑后自动格式化
+
+```json
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "type": "command",
+      "matcher": {
+        "tool_name": "Edit",
+        "path_pattern": "*.py"
+      },
+      "command": "black $FILE_PATH 2>/dev/null || true"
+    }
+  ]
+}
+```
+
+## 环境变量
+
+Hooks 通过环境变量获取上下文：
+
+| 变量 | 说明 |
+|----------|-------------|
+| `TOOL_NAME` | 工具名称 |
+| `TOOL_INPUT` | JSON 编码的工具输入 |
+| `FILE_PATH` | 文件路径（文件操作时） |
+| `MESSAGE` | 通知内容 |
+| `SESSION_ID` | 当前会话 ID |
+
+## 管理 Hooks
+
+使用 `/hooks` 命令：
+
+```
+> /hooks list
+> /hooks reload
+```
+
+## 最佳实践
+
+1. **谨慎测试 hooks**：用日志排查 hook 行为
+2. **保持 hooks 快速**：慢 hook 会影响响应速度
+3. **实验使用本地 hooks**：`.ripperdoc/hooks.local.json` 已在 gitignore 中
+4. **优雅处理错误**：hooks 不应导致 Ripperdoc 崩溃

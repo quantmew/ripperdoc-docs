@@ -1,0 +1,97 @@
+---
+title: 快速开始
+description: 5 分钟上手 Ripperdoc
+---
+
+本指南将帮助你在几分钟内开始使用 Ripperdoc。
+
+## 第一步：安装
+
+```bash
+pip install ripperdoc
+```
+
+## 第二步：设置 API Key
+
+```bash
+export ANTHROPIC_API_KEY="your-api-key"
+```
+
+或者使用 OpenAI：
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+```
+
+## 第三步：启动 Ripperdoc
+
+进入你的项目目录并运行：
+
+```bash
+cd /path/to/your/project
+ripperdoc
+```
+
+## 第四步：开始写代码
+
+现在你可以用自然语言与 Ripperdoc 交互：
+
+```
+> 解释这个项目的结构
+
+> 找出所有处理用户认证的函数
+
+> 为注册表单添加输入校验
+
+> 为 User 类编写测试
+```
+
+## 第五步：理解权限
+
+默认情况下，Ripperdoc 在以下操作前会请求权限：
+- 执行 shell 命令
+- 编辑或创建文件
+- 运行可能具有破坏性的操作
+
+你可以逐个批准操作，或使用 `--yolo` 模式跳过提示：
+
+```bash
+ripperdoc --yolo
+```
+
+## 常用命令
+
+在会话中，你可以使用斜杠命令：
+
+| 命令 | 说明 |
+|---------|-------------|
+| `/help` | 显示可用命令 |
+| `/clear` | 清除对话历史 |
+| `/tools` | 列出可用工具 |
+| `/status` | 显示会话状态 |
+| `/cost` | 显示 token 用量和费用 |
+| `/exit` | 退出会话 |
+
+## 会话示例
+
+```
+$ ripperdoc
+
+> 这个项目里有哪些文件？
+
+[Ripperdoc 使用 Glob 工具列出文件]
+
+> 读取 main.py 并解释它的作用
+
+[Ripperdoc 读取文件并给出说明]
+
+> 给 process_data 函数添加错误处理
+
+[Ripperdoc 请求权限，然后编辑文件]
+```
+
+## 下一步
+
+- [配置](/zh-CN/docs/configuration) - 自定义模型设置与行为
+- [工具](/zh-CN/docs/tools) - 了解可用工具
+- [Hooks](/zh-CN/docs/hooks) - 用自定义 hook 实现自动化

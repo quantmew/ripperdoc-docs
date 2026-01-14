@@ -1,0 +1,27 @@
+{
+  "pages": [
+    "---入门---",
+    "index",
+    "installation",
+    "quickstart",
+    "configuration",
+    "---核心概念---",
+    "tools",
+    "permissions",
+    "sessions",
+    "---功能---",
+    "hooks",
+    "skills",
+    "subagents",
+    "mcp",
+    "---SDK---",
+    "sdk-overview",
+    "sdk-client",
+    "---参考---",
+    "commands",
+    "environment-variables",
+    "---贡献---",
+    "contributing",
+    "architecture"
+  ]
+}

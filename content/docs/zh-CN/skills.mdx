@@ -1,0 +1,179 @@
+---
+title: Skills
+description: 用可复用技能包扩展 Ripperdoc
+---
+
+Skills 是可复用的指令包，用于扩展 Ripperdoc 在特定任务上的能力。
+
+## 什么是 Skills？
+
+Skills 提供：
+- 面向特定任务的指令
+- 工具限制或放行规则
+- 模型提示信息
+- 领域知识
+
+## Skill 位置
+
+Skills 从以下位置加载：
+
+1. **用户技能**：`~/.ripperdoc/skills/<name>/SKILL.md`
+2. **项目技能**：`.ripperdoc/skills/<name>/SKILL.md`
+
+## 使用 Skills
+
+在会话中加载技能：
+
+```
+> /skill pdf
+```
+
+或通过 Skill 工具调用：
+
+```
+Load the pdf skill to process this document
+```
+
+## Skill 结构
+
+一个 skill 是包含 `SKILL.md` 的目录：
+
+```
+~/.ripperdoc/skills/pdf/
+├── SKILL.md
+└── reference.md (optional)
+```
+
+### SKILL.md 格式
+
+```markdown
+---
+name: pdf
+description: Process and extract content from PDF files
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+model: main
+max-thinking-tokens: 8000
+---
+
+# PDF Processing Skill
+
+You are an expert at processing PDF files...
+
+## Instructions
+
+1. Use `pdftotext` for text extraction
+2. Use `pdftoppm` for image extraction
+...
+```
+
+### Frontmatter 选项
+
+| 选项 | 说明 |
+|--------|-------------|
+| `name` | Skill 标识符 |
+| `description` | 简要描述 |
+| `allowed-tools` | 允许的工具列表 |
+| `model` | 使用的模型配置 |
+| `max-thinking-tokens` | 覆盖思考 token 上限 |
+| `disable-model-invocation` | 禁止模型调用 |
+
+## 内置 Skills
+
+Ripperdoc 提供了一些示例技能：
+
+### PDF 处理
+
+```
+> /skill pdf
+```
+
+从 PDF 提取文本、表格与图片。
+
+### PPTX 演示文稿
+
+```
+> /skill pptx
+```
+
+创建与修改 PowerPoint 演示文稿。
+
+### XLSX 表格
+
+```
+> /skill xlsx
+```
+
+处理 Excel 表格。
+
+## 创建自定义 Skills
+
+### 第一步：创建目录
+
+```bash
+mkdir -p ~/.ripperdoc/skills/myskill
+```
+
+### 第二步：编写 SKILL.md
+
+```markdown
+---
+name: myskill
+description: My custom skill
+allowed-tools:
+  - Read
+  - Edit
+  - Bash
+---
+
+# My Custom Skill
+
+You are an expert at [domain]...
+
+## Workflow
+
+1. First, analyze...
+2. Then, implement...
+3. Finally, verify...
+
+## Examples
+
+[Include examples of expected behavior]
+```
+
+### 第三步：测试技能
+
+```
+> /skill myskill
+```
+
+## Skill 最佳实践
+
+1. **更具体**：清晰指令能产生更好结果
+2. **提供示例**：展示预期输入/输出
+3. **限制工具**：仅允许必要工具
+4. **添加参考**：加入支撑文档
+5. **充分测试**：用多种输入验证行为
+
+## 项目级 Skills
+
+在 `.ripperdoc/skills/` 中创建项目技能：
+
+```
+.ripperdoc/
+└── skills/
+    └── deploy/
+        └── SKILL.md
+```
+
+项目技能会覆盖同名的用户技能。
+
+## 列出 Skills
+
+查看可用 skills：
+
+```
+> /skills
+```

@@ -1,0 +1,186 @@
+---
+title: MCP 集成
+description: 连接 Model Context Protocol 服务器
+---
+
+Ripperdoc 支持 Model Context Protocol（MCP），用于连接外部工具与资源。
+
+## 什么是 MCP？
+
+MCP（Model Context Protocol）是一个标准，用于：
+- 向 AI 代理暴露工具
+- 提供资源与上下文
+- 实现代理与服务之间的通信
+
+## 配置
+
+在 `.ripperdoc/mcp.json` 中配置 MCP 服务器：
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/dir"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+### 服务器类型
+
+#### Stdio 服务器
+
+```json
+{
+  "myserver": {
+    "command": "path/to/server",
+    "args": ["--flag", "value"],
+    "env": {
+      "VAR": "value"
+    }
+  }
+}
+```
+
+#### SSE 服务器
+
+```json
+{
+  "myserver": {
+    "url": "http://localhost:3000/sse"
+  }
+}
+```
+
+## MCP 工具
+
+### ListMcpServers
+
+查看已连接的 MCP 服务器：
+
+```
+> List connected MCP servers
+```
+
+### ListMcpResources
+
+查看可用资源：
+
+```
+> List resources from the github server
+```
+
+### ReadMcpResource
+
+读取指定资源：
+
+```
+> Read the README from github://repo/owner/readme
+```
+
+## 可用 MCP 服务器
+
+### 官方服务器
+
+| 服务器 | 说明 |
+|--------|-------------|
+| `@modelcontextprotocol/server-filesystem` | 文件系统访问 |
+| `@modelcontextprotocol/server-github` | GitHub 集成 |
+| `@modelcontextprotocol/server-postgres` | PostgreSQL 访问 |
+| `@modelcontextprotocol/server-slack` | Slack 集成 |
+
+### 安装
+
+```bash
+npx -y @modelcontextprotocol/server-filesystem /path
+```
+
+## 动态 MCP 工具
+
+当 MCP 服务器提供工具时，它们会出现在 Ripperdoc 中：
+
+```json
+{
+  "mcpServers": {
+    "database": {
+      "command": "node",
+      "args": ["./db-server.js"]
+    }
+  }
+}
+```
+
+`database` 服务器的工具将以以下名称出现：
+- `mcp_database_query`
+- `mcp_database_insert`
+- 等
+
+## 示例：GitHub 集成
+
+### 配置
+
+`.ripperdoc/mcp.json`：
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+### 使用
+
+```
+> List open issues in this repository
+> Create a PR for the current branch
+```
+
+## 管理 MCP
+
+### 查看状态
+
+```
+> /mcp
+```
+
+### 重新加载配置
+
+重启 Ripperdoc 以重新加载 MCP 配置。
+
+## 最佳实践
+
+1. **安全管理凭证**：使用环境变量保存 token
+2. **控制范围**：只连接必要的服务器
+3. **监控资源**：MCP 服务器会消耗资源
+4. **优先官方服务器**：选择维护良好的服务器
+5. **先本地测试**：上线前先验证 MCP 是否可用
+
+## 故障排查
+
+### 服务器无法连接
+
+1. 检查命令路径是否正确
+2. 确认依赖已安装
+3. 检查环境变量是否设置
+4. 查看服务器日志了解错误
+
+### 工具不可用
+
+1. 确保服务器已运行
+2. 确认服务器正确实现工具
+3. 重启 Ripperdoc 以重新加载

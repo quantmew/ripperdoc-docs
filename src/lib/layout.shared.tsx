@@ -1,6 +1,10 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import { DEFAULT_LANGUAGE } from "@/lib/i18n";
 
-export function baseOptions(): BaseLayoutProps {
+export function baseOptions(lang?: string): BaseLayoutProps {
+  const docsBaseUrl =
+    lang && lang !== DEFAULT_LANGUAGE ? `/${lang}/docs` : "/docs";
+
   return {
     nav: {
       title: (
@@ -13,7 +17,7 @@ export function baseOptions(): BaseLayoutProps {
     githubUrl: "https://github.com/anthropics/ripperdoc",
     links: [
       {
-        url: "/docs",
+        url: docsBaseUrl,
         text: "Docs",
         active: "nested-url",
       },

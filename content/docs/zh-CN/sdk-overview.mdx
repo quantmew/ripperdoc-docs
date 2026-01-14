@@ -1,0 +1,100 @@
+---
+title: SDK 概览
+description: 作为 Python 库使用 Ripperdoc
+---
+
+Ripperdoc 可以作为 Python SDK 使用，用于构建 AI 驱动的应用。
+
+## 安装
+
+```bash
+pip install ripperdoc
+```
+
+## 快速开始
+
+### 一次性查询
+
+适用于简单的单轮查询：
+
+```python
+from ripperdoc.sdk import query
+
+result = await query(
+    "Explain what this function does",
+    system_prompt="You are a helpful coding assistant.",
+    model="main"
+)
+print(result.content)
+```
+
+### 会话式客户端
+
+适用于多轮对话：
+
+```python
+from ripperdoc.sdk import RipperdocClient
+
+client = RipperdocClient(
+    model="main",
+    yolo_mode=True
+)
+
+# Start a conversation
+response = await client.query("What files are in this project?")
+print(response.content)
+
+# Continue the conversation
+response = await client.query("Read the main.py file")
+print(response.content)
+
+# Clean up
+await client.close()
+```
+
+## 使用场景
+
+### 代码分析
+
+```python
+from ripperdoc.sdk import query
+
+analysis = await query(
+    f"Analyze this code for security issues:\n\n```python\n{code}\n```",
+    system_prompt="You are a security expert."
+)
+```
+
+### 自动化重构
+
+```python
+from ripperdoc.sdk import RipperdocClient
+
+async with RipperdocClient(yolo_mode=True) as client:
+    await client.query("Find all deprecated API calls")
+    await client.query("Update them to use the new API")
+```
+
+### 生成文档
+
+```python
+from ripperdoc.sdk import query
+
+docs = await query(
+    "Generate API documentation for all public functions in src/api/",
+    tools=["Read", "Glob", "Grep"]
+)
+```
+
+## SDK 特性
+
+- **Async/await 支持**：原生异步 Python API
+- **工具访问**：可使用任意 Ripperdoc 工具
+- **会话管理**：保持对话上下文
+- **Token 统计**：监控用量与成本
+- **自定义提示**：完全控制 system prompt
+
+## 下一步
+
+- [SDK 客户端参考](/zh-CN/docs/sdk-client) - 详细 API 参考
+- [示例](https://github.com/anthropics/ripperdoc/tree/main/examples) - 示例脚本

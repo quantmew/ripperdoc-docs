@@ -1,0 +1,48 @@
+---
+title: 简介
+description: Ripperdoc 是什么以及为什么使用它
+---
+
+Ripperdoc 是一个开源、可扩展的 AI 编程代理，运行在你的终端中。它旨在通过自然语言对话帮助你编写、重构并理解代码。
+
+## 为什么选择 Ripperdoc？
+
+- **多模型支持**：可与 Anthropic Claude、OpenAI、DeepSeek、Gemini，以及任何兼容 OpenAI API 的服务（包括本地模型）一起使用
+- **终端原生**：丰富的 CLI 体验，包含语法高亮、流式响应与实时反馈
+- **可扩展**：支持 hooks、skills、subagents，以及 MCP（Model Context Protocol）集成
+- **隐私优先**：在本地运行，使用你自己的 API key
+- **开源**：Apache 2.0 许可，完全透明、可定制
+
+## 关键特性
+
+### 强大的工具
+
+Ripperdoc 内置 23 个工具，用于：
+- 文件操作（读、写、编辑、多文件编辑）
+- 代码搜索（glob、正则 grep）
+- Shell 命令执行（含 sandbox 支持）
+- Jupyter 笔记本编辑
+- 任务规划与跟踪
+
+### 智能权限
+
+完善的权限系统：
+- 对潜在破坏性操作进行确认
+- 支持 YOLO 模式
+- 支持细粒度权限规则
+
+### 会话管理
+
+- 持久化对话历史
+- 恢复中断的会话
+- 自动上下文压缩
+- 成本与 token 统计
+
+## 开始使用
+
+```bash
+pip install ripperdoc
+ripperdoc --help
+```
+
+参阅 [安装](/zh-CN/docs/installation) 获取详细配置，或直接查看 [快速开始](/zh-CN/docs/quickstart) 立刻上手。

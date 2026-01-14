@@ -1,0 +1,125 @@
+---
+title: 权限
+description: 理解并配置权限系统
+---
+
+Ripperdoc 内置权限系统，用于避免非预期操作。
+
+## 权限如何工作
+
+默认情况下，Ripperdoc 在以下操作前会请求批准：
+
+- 执行 shell 命令
+- 编辑或写入文件
+- 运行可能具有破坏性的操作
+
+当出现权限提示时，你可以：
+
+- **y/yes**：允许操作
+- **n/no**：拒绝操作
+- **a/always**：始终允许此类操作
+
+## YOLO 模式
+
+使用 YOLO 模式跳过所有权限提示：
+
+```bash
+ripperdoc --yolo
+```
+
+**警告**：仅在可信环境中使用 YOLO 模式，确保你能接受 AI 在无需确认的情况下进行修改。
+
+## 权限规则
+
+在 `.ripperdoc/config.json` 中配置权限规则：
+
+```json
+{
+  "permissions": {
+    "mode": "default",
+    "rules": [
+      {
+        "tool": "Bash",
+        "pattern": "npm test",
+        "action": "allow"
+      },
+      {
+        "tool": "Edit",
+        "path": "*.md",
+        "action": "allow"
+      },
+      {
+        "tool": "Bash",
+        "pattern": "rm -rf",
+        "action": "deny"
+      }
+    ]
+  }
+}
+```
+
+### 规则属性
+
+| 属性 | 说明 |
+|----------|-------------|
+| `tool` | 匹配的工具名 |
+| `pattern` | 命令或路径模式（支持 glob） |
+| `action` | `allow`、`deny` 或 `ask` |
+
+### 规则行为
+
+- **allow**：自动批准匹配的操作
+- **deny**：自动拒绝匹配的操作
+- **ask**：每次都询问
+
+## 只读操作
+
+部分只读操作会自动允许：
+
+- `Glob` - 查找文件
+- `Grep` - 搜索内容
+- `Read` - 读取文件
+- `LS` - 列出目录
+- Shell 命令：`ls`、`cat`、`head`、`tail`、`grep`、`find`（不含重定向）
+
+## Sandbox 模式
+
+Bash 工具支持只读 sandbox 模式：
+
+```json
+{
+  "command": "ls -la",
+  "sandbox": true
+}
+```
+
+Sandbox 模式：
+- 禁止文件系统写入
+- 禁止网络访问
+- 无需权限提示
+
+## 访问敏感目录
+
+当访问敏感目录时，Ripperdoc 会要求确认：
+
+- `/usr`、`/etc`、`/bin`、`/sbin`
+- 系统配置目录
+- 其他用户的 home 目录
+
+## 管理权限
+
+使用 `/permissions` 命令查看与管理权限：
+
+```
+> /permissions list
+> /permissions add allow Bash "npm *"
+> /permissions remove 1
+```
+
+## 最佳实践
+
+1. **先用默认设置**：在熟悉流程前，先使用默认权限系统
+2. **允许常用安全命令**：为常用的安全命令建立 allow 规则
+3. **显式拒绝危险模式**：例如 `rm -rf /`
+4. **探索时使用 sandbox**：在不熟悉的代码库里用 sandbox 模式
+5. **YOLO 需谨慎**：只有在确认风险可控后再启用 YOLO

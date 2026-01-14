@@ -1,0 +1,173 @@
+---
+title: 子代理
+description: 将任务委派给专门的代理
+---
+
+子代理允许你把具体任务委派给带有自定义配置的专门代理。
+
+## 什么是子代理？
+
+子代理是独立的代理实例，它们：
+- 有自己的工具范围
+- 可使用自定义 system prompt
+- 与主对话隔离运行
+- 将结果返回给主代理
+
+## 使用子代理
+
+主代理可以通过 Task 工具委派任务：
+
+```
+Research the authentication patterns in this codebase
+```
+
+AI 会自动为研究任务创建子代理。
+
+## 代理定义
+
+在 `.ripperdoc/agents/` 中定义自定义代理：
+
+```
+.ripperdoc/
+└── agents/
+    └── security-reviewer.md
+```
+
+### 代理定义格式
+
+```markdown
+---
+name: security-reviewer
+description: Reviews code for security vulnerabilities
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+model: main
+---
+
+# Security Reviewer Agent
+
+You are a security expert reviewing code for vulnerabilities.
+
+## Focus Areas
+
+1. Input validation
+2. SQL injection
+3. XSS vulnerabilities
+4. Authentication issues
+5. Authorization flaws
+
+## Instructions
+
+1. Search for potentially dangerous patterns
+2. Analyze found code for vulnerabilities
+3. Report findings with severity levels
+```
+
+### 代理选项
+
+| 选项 | 说明 |
+|--------|-------------|
+| `name` | 代理标识符 |
+| `description` | 代理作用 |
+| `allowed-tools` | 代理可用工具 |
+| `model` | 使用的模型配置 |
+| `max-turns` | 最大对话轮次 |
+
+## 内置代理类型
+
+### Research Agent
+
+探索代码库并回答问题：
+
+```
+Task: Find how user sessions are managed
+```
+
+### Code Review Agent
+
+检查代码变更：
+
+```
+Task: Review the changes in the last commit for issues
+```
+
+### Test Agent
+
+运行并分析测试：
+
+```
+Task: Run tests and fix any failures
+```
+
+## 创建自定义代理
+
+### 第一步：创建代理定义
+
+```bash
+mkdir -p .ripperdoc/agents
+```
+
+创建 `.ripperdoc/agents/my-agent.md`：
+
+```markdown
+---
+name: my-agent
+description: My specialized agent
+allowed-tools:
+  - Read
+  - Grep
+---
+
+# My Agent
+
+You specialize in [task]...
+
+## Instructions
+
+[Detailed instructions]
+```
+
+### 第二步：使用代理
+
+主代理会在合适时自动使用你的自定义代理，你也可以显式请求：
+
+```
+Use the my-agent to analyze the database schema
+```
+
+## 管理子代理
+
+### 查看运行中的任务
+
+```
+> /tasks
+```
+
+### 查看代理定义
+
+```
+> /agents
+```
+
+## 最佳实践
+
+1. **合理限定范围**：只给代理必要的工具
+2. **指令清晰**：明确代理要做什么
+3. **限制轮次**：用 max-turns 防止跑偏
+4. **用于并行**：多个独立任务可并行
+5. **复核结果**：总是复查子代理输出
+
+## 子代理通信
+
+子代理：
+- 接收主代理的任务描述
+- 可访问代码库
+- 返回结构化结果
+- 不能直接与用户沟通
+
+结果会返回给主代理，主代理可以：
+- 总结发现
+- 根据结果采取行动
+- 委派后续任务

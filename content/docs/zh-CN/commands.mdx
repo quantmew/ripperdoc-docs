@@ -1,0 +1,261 @@
+---
+title: 命令参考
+description: Slash 命令完整列表
+---
+
+Ripperdoc 提供 slash 命令来管理会话与配置。
+
+## 通用命令
+
+### /help
+
+显示可用命令与用法信息。
+
+```
+> /help
+> /help tools
+```
+
+### /exit
+
+退出当前会话。
+
+```
+> /exit
+```
+
+### /clear
+
+清除对话历史并重新开始。
+
+```
+> /clear
+```
+
+## 会话命令
+
+### /status
+
+显示当前会话状态，包括消息数、token 与时长。
+
+```
+> /status
+```
+
+### /stats
+
+显示更详细的会话统计。
+
+```
+> /stats
+```
+
+### /cost
+
+显示 token 使用与预估费用。
+
+```
+> /cost
+```
+
+### /compact
+
+手动压缩对话以减少上下文体积。
+
+```
+> /compact
+```
+
+### /resume
+
+恢复之前的会话（启动时使用）。
+
+```bash
+ripperdoc --resume
+```
+
+## 配置命令
+
+### /config
+
+查看或修改配置。
+
+```
+> /config
+> /config set model.timeout 180
+```
+
+### /models
+
+列出并切换模型配置。
+
+```
+> /models
+> /models use fast
+```
+
+## 工具命令
+
+### /tools
+
+列出可用工具。
+
+```
+> /tools
+```
+
+### /permissions
+
+管理权限规则。
+
+```
+> /permissions
+> /permissions list
+> /permissions add allow Bash "npm test"
+```
+
+## 扩展命令
+
+### /hooks
+
+管理 hooks 配置。
+
+```
+> /hooks
+> /hooks list
+> /hooks reload
+```
+
+### /skills
+
+列出可用技能。
+
+```
+> /skills
+```
+
+### /skill
+
+加载技能。
+
+```
+> /skill pdf
+> /skill pptx
+```
+
+### /agents
+
+列出代理定义。
+
+```
+> /agents
+```
+
+### /tasks
+
+列出正在运行的子代理任务。
+
+```
+> /tasks
+```
+
+### /mcp
+
+管理 MCP 服务器连接。
+
+```
+> /mcp
+```
+
+## 任务管理
+
+### /todos
+
+查看待办列表。
+
+```
+> /todos
+```
+
+### /todo
+
+添加或管理待办项。
+
+```
+> /todo add Implement feature X
+> /todo done 1
+```
+
+## 记忆命令
+
+### /memory
+
+查看并管理对话记忆。
+
+```
+> /memory
+```
+
+### /context
+
+查看当前上下文信息。
+
+```
+> /context
+```
+
+## 诊断
+
+### /doctor
+
+运行诊断检查配置与连通性。
+
+```
+> /doctor
+```
+
+## 自定义命令
+
+在 `.ripperdoc/commands.json` 中定义自定义命令：
+
+```json
+{
+  "commands": {
+    "test": "Run npm test and report results",
+    "deploy": "Deploy to staging environment",
+    "review": "Review code in $1 for issues"
+  }
+}
+```
+
+使用自定义命令：
+
+```
+> /test
+> /review src/api.py
+```
+
+## 命令快捷方式
+
+部分命令有快捷方式：
+
+| 命令 | 快捷方式 |
+|---------|----------|
+| `/help` | `/h` |
+| `/exit` | `/q` |
+| `/clear` | `/c` |
+| `/status` | `/s` |
+
+## 获取帮助
+
+查看某个命令的帮助：
+
+```
+> /help <command>
+```
+
+例如：
+
+```
+> /help permissions
+```

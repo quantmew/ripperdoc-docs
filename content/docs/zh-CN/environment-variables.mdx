@@ -1,0 +1,149 @@
+---
+title: 环境变量
+description: 环境变量完整列表
+---
+
+Ripperdoc 可通过环境变量进行配置。
+
+## API Keys
+
+### 提供商 API Keys
+
+| 变量 | 说明 |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | Anthropic Claude API key |
+| `OPENAI_API_KEY` | OpenAI API key |
+| `DEEPSEEK_API_KEY` | DeepSeek API key |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `OPENROUTER_API_KEY` | OpenRouter API key |
+| `MISTRAL_API_KEY` | Mistral API key |
+
+### API 端点
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `ANTHROPIC_API_URL` | Anthropic API base URL | `https://api.anthropic.com` |
+| `OPENAI_BASE_URL` | OpenAI API base URL | `https://api.openai.com/v1` |
+| `OPENAI_API_BASE` | 备用 OpenAI base URL | - |
+
+## 行为设置
+
+### 超时与重试
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_API_TIMEOUT` | API 请求超时（秒） | `120` |
+| `RIPPERDOC_MAX_RETRIES` | API 最大重试次数 | `10` |
+
+### 上下文与记忆
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_MAX_QUERY_ITERATIONS` | 最大查询循环次数 | `1024` |
+| `RIPPERDOC_MESSAGE_WARNING_THRESHOLD` | 警告的消息数阈值 | `500` |
+| `RIPPERDOC_MESSAGE_CRITICAL_THRESHOLD` | 严重警告的消息数阈值 | `1000` |
+
+### 文件操作
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_FILE_CACHE_MAX_ENTRIES` | 最大文件缓存条目 | `500` |
+| `RIPPERDOC_FILE_CACHE_MAX_MEMORY_MB` | 最大文件缓存内存（MB） | `50` |
+| `RIPPERDOC_MAX_READ_FILE_SIZE_MB` | 允许读取的最大文件大小（MB） | `50` |
+
+### Bash 工具
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_BASH_TIMEOUT_MS` | 默认 bash 超时（毫秒） | `120000` |
+| `RIPPERDOC_BASH_MAX_TIMEOUT_MS` | 最大 bash 超时（毫秒） | `600000` |
+| `RIPPERDOC_BASH_MAX_OUTPUT_LENGTH` | 最大输出字符数 | `30000` |
+
+### Shell 配置
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_SHELL` | 首选 shell | 自动检测 |
+| `RIPPERDOC_SHELL_PATH` | shell 可执行文件路径 | 自动检测 |
+
+## 代理设置
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_AGENT_RUN_TTL_SEC` | 代理运行 TTL（秒） | `3600` |
+
+## 日志
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_LOG_LEVEL` | 日志级别（DEBUG、INFO、WARNING、ERROR） | `INFO` |
+| `RIPPERDOC_LOG_FILE` | 日志文件路径 | 无 |
+
+## 开发
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_DEBUG` | 启用调试模式 | `false` |
+| `RIPPERDOC_DEV_MODE` | 启用开发模式 | `false` |
+
+## .env 示例
+
+```bash
+# API Keys
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+
+# Timeouts
+RIPPERDOC_API_TIMEOUT=180
+RIPPERDOC_MAX_RETRIES=5
+
+# Bash settings
+RIPPERDOC_BASH_TIMEOUT_MS=300000
+
+# File settings
+RIPPERDOC_MAX_READ_FILE_SIZE_MB=100
+
+# Logging
+RIPPERDOC_LOG_LEVEL=DEBUG
+RIPPERDOC_LOG_FILE=/tmp/ripperdoc.log
+```
+
+## 加载环境变量
+
+### 从 Shell 加载
+
+```bash
+export ANTHROPIC_API_KEY="your-key"
+ripperdoc
+```
+
+### 从 .env 文件加载
+
+在项目根目录创建 `.env` 文件：
+
+```bash
+ANTHROPIC_API_KEY=your-key
+```
+
+然后用 `direnv` 或手动 source：
+
+```bash
+source .env
+ripperdoc
+```
+
+### 在 Python SDK 中使用
+
+```python
+import os
+os.environ["ANTHROPIC_API_KEY"] = "your-key"
+
+from ripperdoc.sdk import query
+```
+
+## 安全提示
+
+1. **不要提交 API key** 到版本控制
+2. **使用 `.env.local`** 做本地覆盖（加入 `.gitignore`）
+3. **若泄露要轮换 key**
+4. **为不同环境使用不同 key**

@@ -1,0 +1,251 @@
+---
+title: 架构
+description: Ripperdoc 的技术架构
+---
+
+本文档介绍 Ripperdoc 的内部架构。
+
+## 概览
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         CLI Layer                            │
+│  (ripperdoc/cli/)                                           │
+│  - Terminal UI, Commands, User Interaction                  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        Core Layer                            │
+│  (ripperdoc/core/)                                          │
+│  - Query Loop, Tool Registry, Permissions, Hooks            │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+┌───────────────────┐ ┌─────────────┐ ┌─────────────────────┐
+│     Providers     │ │    Tools    │ │      Utilities      │
+│  (core/providers/)│ │  (tools/)   │ │      (utils/)       │
+│  - Anthropic      │ │  - Bash     │ │  - File Watch       │
+│  - OpenAI         │ │  - Read     │ │  - Session Mgmt     │
+│  - Gemini         │ │  - Edit     │ │  - Logging          │
+│  - DeepSeek       │ │  - Glob     │ │  - Permissions      │
+└───────────────────┘ │  - Grep     │ └─────────────────────┘
+                      │  - Task     │
+                      │  - ...      │
+                      └─────────────┘
+```
+
+## 核心组件
+
+### Query Loop（`core/query.py`）
+
+主查询循环负责：
+
+1. 用工具定义构建 system prompt
+2. 向 LLM 提供商发送消息
+3. 从响应中解析工具调用
+4. 执行工具并收集结果
+5. 处理错误与上下文溢出
+
+```python
+async def query(messages, system_prompt, context, query_context):
+    for iteration in range(MAX_ITERATIONS):
+        # Build full prompt
+        full_prompt = build_full_system_prompt(...)
+
+        # Call LLM
+        response = await query_llm(messages, full_prompt, tools)
+
+        # Extract and execute tool calls
+        tool_calls = extract_tool_use_blocks(response)
+        for tool_call in tool_calls:
+            result = await execute_tool(tool_call)
+
+        # Continue or return based on response
+```
+
+### 工具系统（`core/tool.py`）
+
+工具遵循统一接口：
+
+```python
+class Tool(Generic[TInput, TOutput]):
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def input_schema(self) -> type[TInput]: ...
+
+    async def validate_input(self, input_data, context) -> ValidationResult: ...
+
+    async def call(self, input_data, context) -> AsyncGenerator[ToolOutput]: ...
+
+    def needs_permissions(self, input_data) -> bool: ...
+```
+
+### Provider 抽象（`core/providers/`）
+
+Provider 统一不同 LLM API：
+
+```python
+class ProviderClient:
+    async def call(
+        self,
+        model_profile: ModelProfile,
+        system_prompt: str,
+        normalized_messages: List[Dict],
+        tools: List[Tool],
+        **kwargs
+    ) -> ProviderResponse: ...
+```
+
+### Hook 系统（`core/hooks/`）
+
+Hooks 拦截生命周期事件：
+
+```
+Event Flow:
+1. UserPromptSubmit → User sends message
+2. PreToolUse → Before tool execution
+3. PermissionRequest → When permission needed
+4. PostToolUse → After tool completes
+5. Stop → Agent finishes responding
+```
+
+## 数据流
+
+### 消息流
+
+```
+User Input
+    │
+    ▼
+┌────────────────┐
+│ CLI Input      │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐     ┌────────────────┐
+│ Hook: Submit   │────▶│ May modify     │
+└───────┬────────┘     │ or block       │
+        │              └────────────────┘
+        ▼
+┌────────────────┐
+│ Query Loop     │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ LLM Provider   │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Tool Execution │◀───── Hooks: Pre/Post
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Response       │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ CLI Output     │
+└────────────────┘
+```
+
+### 工具执行流
+
+```
+Tool Call (from LLM)
+    │
+    ▼
+┌────────────────┐
+│ Resolve Tool   │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Parse Input    │ ← Pydantic validation
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ PreToolUse     │ ← Hook can block/modify
+│ Hook           │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Permission     │ ← May prompt user
+│ Check          │
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ Execute Tool   │ ← Yields progress/result
+└───────┬────────┘
+        │
+        ▼
+┌────────────────┐
+│ PostToolUse    │ ← Hook can add context
+│ Hook           │
+└────────────────┘
+```
+
+## 关键模块
+
+### `ripperdoc/cli/`
+
+- `cli.py` - 主入口
+- `ui/` - 终端 UI 组件
+- `commands/` - Slash 命令实现
+
+### `ripperdoc/core/`
+
+- `query.py` - 主查询循环
+- `tool.py` - 工具基类
+- `permissions.py` - 权限检查
+- `config.py` - 配置管理
+- `providers/` - LLM 提供商实现
+- `hooks/` - Hook 系统
+
+### `ripperdoc/tools/`
+
+23 个工具实现，涵盖文件操作、搜索、执行等。
+
+### `ripperdoc/utils/`
+
+- `file_watch.py` - 文件变更检测
+- `session_*.py` - 会话管理
+- `conversation_compaction.py` - 上下文压缩
+- `permissions/` - 权限工具
+
+## 扩展点
+
+### 添加 Provider
+
+1. 创建 `ripperdoc/core/providers/my_provider.py`
+2. 实现 `ProviderClient` 接口
+3. 在 provider factory 中注册
+
+### 添加工具
+
+1. 创建 `ripperdoc/tools/my_tool.py`
+2. 继承 `Tool` 基类
+3. 在 `default_tools.py` 中注册
+
+### 添加 Hook
+
+1. 在 `hooks/events.py` 中定义事件
+2. 在 `hooks/executor.py` 中实现处理
+3. 集成到 query loop
+
+## 性能考虑
+
+- **流式输出**：所有 LLM 响应均为流式，保证响应及时
+- **缓存**：文件内容缓存以避免重复读取
+- **压缩**：长会话自动进行上下文压缩
+- **并发**：安全工具可并行运行

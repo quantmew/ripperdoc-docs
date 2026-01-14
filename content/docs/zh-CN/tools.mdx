@@ -1,0 +1,178 @@
+---
+title: 工具
+description: Ripperdoc 内置可用工具
+---
+
+Ripperdoc 内置 23 个工具，让 AI 能与你的代码库和系统交互。
+
+## 文件操作
+
+### Read
+
+读取文件内容，可选行范围。
+
+```
+Read file: /path/to/file.py
+Read lines 10-50: /path/to/file.py
+```
+
+### Edit
+
+使用精确字符串匹配替换文件中的文本。
+
+```
+Edit file: /path/to/file.py
+Replace "old_text" with "new_text"
+```
+
+### Write
+
+创建或覆盖文件。
+
+```
+Write to: /path/to/new_file.py
+Content: [file contents]
+```
+
+### MultiEdit
+
+在一次操作中执行多个编辑。
+
+### NotebookEdit
+
+编辑 Jupyter notebook 单元格（`.ipynb` 文件）。
+
+## 搜索工具
+
+### Glob
+
+按模式查找文件。
+
+```
+Find all Python files: **/*.py
+Find test files: tests/**/*_test.py
+```
+
+### Grep
+
+使用正则搜索文件内容。
+
+```
+Search for "def process": src/**/*.py
+Find TODO comments: rg "TODO|FIXME"
+```
+
+## Shell 执行
+
+### Bash
+
+执行 shell 命令，支持超时与 sandbox。
+
+```
+Run: npm test
+Run in sandbox: ls -la (read-only)
+Run in background: npm run build
+```
+
+特性：
+- 实时输出流
+- 超时配置
+- 只读 sandbox 模式
+- 后台执行
+
+### BashOutput
+
+获取后台 shell 命令的输出。
+
+### KillBash
+
+终止运行中的后台命令。
+
+## 导航
+
+### LS
+
+列出目录内容。
+
+```
+List: /path/to/directory
+```
+
+## 规划与跟踪
+
+### TodoRead / TodoWrite
+
+管理当前项目的持久化待办事项。
+
+```
+Create todo: Implement user authentication
+Mark complete: #1
+```
+
+### EnterPlanMode / ExitPlanMode
+
+进入规划模式，在写代码前先设计实现方案。
+
+## 交互
+
+### AskUserQuestion
+
+向用户请求澄清或选择。
+
+## 子代理
+
+### Task
+
+把任务委派给专门的子代理。
+
+```
+Run research task: Find all API endpoints
+Run code review: Check for security issues
+```
+
+## 扩展
+
+### Skill
+
+加载并执行技能包。
+
+```
+Load skill: pdf
+Load skill: pptx
+```
+
+### ToolSearch
+
+为任务查找相关工具。
+
+## MCP 集成
+
+### ListMcpServers
+
+列出已连接的 MCP 服务器。
+
+### ListMcpResources
+
+列出 MCP 服务器中的资源。
+
+### ReadMcpResource
+
+读取 MCP 服务器中的资源。
+
+## 工具权限
+
+大多数工具在执行前需要权限。你可以：
+
+1. 单独批准每个操作
+2. 使用 `--yolo` 模式跳过提示
+3. 在 `.ripperdoc/config.json` 中配置权限规则
+
+详情请看 [权限](/zh-CN/docs/permissions)。
+
+## 查看可用工具
+
+使用 `/tools` 命令查看所有可用工具：
+
+```
+> /tools
+```
