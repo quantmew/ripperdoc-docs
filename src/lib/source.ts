@@ -4,7 +4,7 @@ import { loader } from "fumadocs-core/source";
 import { DEFAULT_LANGUAGE, DOCS_LANGUAGES } from "@/lib/i18n";
 
 const i18n = defineI18n({
-  languages: DOCS_LANGUAGES,
+  languages: [...DOCS_LANGUAGES],
   defaultLanguage: DEFAULT_LANGUAGE,
   hideLocale: "default-locale",
   parser: "dir",
