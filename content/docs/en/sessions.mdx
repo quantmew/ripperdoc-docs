@@ -16,19 +16,29 @@ Sessions are stored in `~/.ripperdoc/sessions/` as JSON files containing:
 
 ## Resuming Sessions
 
-Resume a previous session:
+### Continue Most Recent Session
+
+Continue the most recent session in the current directory:
 
 ```bash
-ripperdoc --resume
+ripperdoc --continue
+# or
+ripperdoc -c
+# or use the alias
+rd -c
 ```
 
-This opens an interactive picker to select from recent sessions.
+This automatically resumes the last session without prompting.
 
-Resume a specific session:
+### Interactive Session Selection
 
-```bash
-ripperdoc --resume SESSION_ID
+Use the `/resume` command during an interactive session to select from recent sessions:
+
 ```
+> /resume
+```
+
+This opens an interactive picker to browse and select from your session history.
 
 ## Session Commands
 
@@ -86,23 +96,29 @@ Manually trigger compaction:
 > /compact
 ```
 
+You can also provide custom instructions:
+
+```
+> /compact Focus on the API implementation details
+```
+
 ## Session Configuration
 
-Configure session behavior in `.ripperdoc/config.json`:
+Configure session behavior via environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_AUTO_COMPACT` | Enable auto-compaction | `true` |
+| `RIPPERDOC_CONTEXT_TOKENS` | Context window size limit | Model default |
+
+Or in `~/.ripperdoc.json`:
 
 ```json
 {
-  "memory": {
-    "compact_after_turns": 50
-  }
+  "auto_compact_enabled": true,
+  "context_token_limit": 100000
 }
 ```
-
-### Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `compact_after_turns` | Turns before auto-compact | 50 |
 
 ## Context Length Handling
 
@@ -121,9 +137,12 @@ Session files are stored as JSON and can be:
 - Analyzed for usage patterns
 - Shared for debugging
 
+Session file location: `~/.ripperdoc/sessions/<project-hash>/<session-id>.json`
+
 ## Best Practices
 
 1. **Use `/clear` for new tasks**: Start fresh when switching to unrelated work
 2. **Monitor `/cost` for long sessions**: Keep track of token usage
-3. **Resume when interrupted**: Use `--resume` to continue interrupted work
+3. **Resume when interrupted**: Use `-c` or `--continue` to continue interrupted work
 4. **Compact proactively**: Use `/compact` if responses slow down
+5. **Use `/resume` to browse history**: Find specific past sessions interactively

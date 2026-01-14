@@ -11,11 +11,13 @@ Hooks let you execute custom scripts at various points in Ripperdoc's lifecycle.
 |-------|-------------|
 | `PreToolUse` | Before a tool executes |
 | `PostToolUse` | After a tool completes |
-| `PermissionRequest` | When permission is requested |
+| `PermissionRequest` | When permission dialog is shown |
 | `UserPromptSubmit` | When user submits a message |
 | `Notification` | For status notifications |
-| `Stop` | When the agent completes |
-| `SessionStart` | When a session begins |
+| `Stop` | When the main agent completes |
+| `SubagentStop` | When a subagent (Task) completes |
+| `PreCompact` | Before context compaction |
+| `SessionStart` | When a session begins or resumes |
 | `SessionEnd` | When a session ends |
 
 ## Configuration Files
@@ -26,6 +28,50 @@ Hooks are configured in JSON files (loaded in order):
 2. `.ripperdoc/hooks.json` - Project hooks
 3. `.ripperdoc/hooks.local.json` - Local hooks (gitignored)
 
+## Configuration Format
+
+The correct configuration format uses nested event/matcher structure:
+
+```json
+{
+  "hooks": {
+    "EventName": [
+      {
+        "matcher": "ToolPattern",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "your-command-here",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Basic Example
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Bash completed' >> /tmp/ripperdoc.log",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
 ## Hook Types
 
 ### Command Hooks
@@ -34,147 +80,231 @@ Execute shell commands:
 
 ```json
 {
-  "hooks": [
-    {
-      "event": "PostToolUse",
-      "type": "command",
-      "matcher": {
-        "tool_name": "Bash"
-      },
-      "command": "echo 'Bash command completed' >> /tmp/ripperdoc.log"
-    }
-  ]
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Tool completed'",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
 ### Prompt Hooks
 
-Use an LLM to process the hook:
+Use an LLM to process the hook (supported for `Stop`, `SubagentStop`, `UserPromptSubmit`, `PreToolUse`, `PermissionRequest`):
 
 ```json
 {
-  "hooks": [
-    {
-      "event": "PreToolUse",
-      "type": "prompt",
-      "matcher": {
-        "tool_name": "Edit"
-      },
-      "prompt": "Review this edit for security issues"
-    }
-  ]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Review this edit for security issues: $ARGUMENTS",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
 ## Matchers
 
-Control when hooks run:
+The `matcher` field controls when hooks run:
+
+- **Exact tool name**: `"Bash"`, `"Edit"`, `"Write"`
+- **Regex pattern**: `"Edit|Write"`, `"mcp__.*__write.*"`
+- **Match all**: `"*"` or omit the matcher field
 
 ```json
 {
-  "matcher": {
-    "tool_name": "Bash",
-    "tool_name_regex": "^(Bash|Edit)$",
-    "input_contains": "npm",
-    "path_pattern": "*.py"
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'File operation detected'"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
 
-| Matcher | Description |
-|---------|-------------|
-| `tool_name` | Exact tool name |
-| `tool_name_regex` | Regex pattern for tool name |
-| `input_contains` | Input must contain string |
-| `path_pattern` | Glob pattern for file paths |
+## Hook Input (stdin JSON)
 
-## Hook Decisions
+Hooks receive context as JSON via stdin. Common fields for all hooks:
 
-Hooks can return decisions to control execution:
+| Field | Description |
+|-------|-------------|
+| `session_id` | Current session ID |
+| `transcript_path` | Path to conversation JSON |
+| `cwd` | Current working directory |
+| `permission_mode` | Mode: `default`, `plan`, `acceptEdits`, `bypassPermissions` |
+| `hook_event_name` | Name of the event |
+
+### PreToolUse/PostToolUse Input
+
+```json
+{
+  "hook_event_name": "PreToolUse",
+  "session_id": "abc123",
+  "cwd": "/path/to/project",
+  "tool_name": "Bash",
+  "tool_input": {"command": "npm test"},
+  "tool_use_id": "tool_123"
+}
+```
+
+### PermissionRequest Input
+
+```json
+{
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Bash",
+  "tool_input": {"command": "rm -rf temp"},
+  "tool_use_id": "tool_456"
+}
+```
+
+### UserPromptSubmit Input
+
+```json
+{
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "Please fix the bug in main.py"
+}
+```
+
+### Stop/SubagentStop Input
+
+```json
+{
+  "hook_event_name": "Stop",
+  "stop_hook_active": false,
+  "reason": "end_turn"
+}
+```
+
+### PreCompact Input
+
+```json
+{
+  "hook_event_name": "PreCompact",
+  "trigger": "auto",
+  "custom_instructions": ""
+}
+```
+
+The `trigger` field can be `manual` (from `/compact` command) or `auto` (automatic compaction).
+
+### SessionStart Input
+
+```json
+{
+  "hook_event_name": "SessionStart",
+  "source": "startup"
+}
+```
+
+The `source` field can be: `startup`, `resume`, `clear`, `compact`.
+
+### SessionEnd Input
+
+```json
+{
+  "hook_event_name": "SessionEnd",
+  "reason": "other",
+  "duration_seconds": 123.45,
+  "message_count": 10
+}
+```
+
+### Notification Input
+
+```json
+{
+  "hook_event_name": "Notification",
+  "message": "Permission required",
+  "notification_type": "permission_prompt"
+}
+```
+
+Notification types: `permission_prompt`, `idle_prompt`, `auth_success`, `elicitation_dialog`.
+
+## Hook Output (JSON)
+
+Hooks can output JSON to control execution:
 
 ```json
 {
   "decision": "allow",
-  "message": "Approved by hook"
+  "reason": "Approved by hook"
 }
 ```
 
-| Decision | Effect |
-|----------|--------|
-| `allow` | Proceed with operation |
-| `deny` | Block the operation |
-| `ask` | Prompt user for confirmation |
-| `block` | Block and stop processing |
+### Decision Values
 
-## Examples
+| Decision | Events | Effect |
+|----------|--------|--------|
+| `allow` | PreToolUse, PermissionRequest | Bypass permission, auto-approve |
+| `deny` | PreToolUse, PermissionRequest | Block the operation |
+| `ask` | PreToolUse | Prompt user for confirmation |
+| `block` | PostToolUse, UserPromptSubmit, Stop, SubagentStop | Block/prevent stopping |
 
-### Logging Tool Usage
+### Advanced Output Format
 
 ```json
 {
-  "hooks": [
-    {
-      "event": "PostToolUse",
-      "type": "command",
-      "command": "echo '[$(date)] Tool: $TOOL_NAME' >> ~/.ripperdoc/tool.log"
-    }
-  ]
+  "continue": true,
+  "stopReason": "Optional reason",
+  "suppressOutput": false,
+  "systemMessage": "Message to add to system prompt",
+  "additionalContext": "Context to inject",
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow",
+    "permissionDecisionReason": "Auto-approved by policy",
+    "updatedInput": {"command": "modified command"}
+  }
 }
 ```
 
-### Protect Sensitive Files
+### Exit Codes
 
-```json
-{
-  "hooks": [
-    {
-      "event": "PreToolUse",
-      "type": "command",
-      "matcher": {
-        "tool_name": "Edit",
-        "path_pattern": "*.env*"
-      },
-      "command": "echo '{\"decision\": \"deny\", \"message\": \"Cannot edit .env files\"}'"
-    }
-  ]
-}
-```
-
-### Desktop Notifications
-
-```json
-{
-  "hooks": [
-    {
-      "event": "Notification",
-      "type": "command",
-      "command": "notify-send 'Ripperdoc' '$MESSAGE'"
-    }
-  ]
-}
-```
-
-### Auto-format on Edit
-
-```json
-{
-  "hooks": [
-    {
-      "event": "PostToolUse",
-      "type": "command",
-      "matcher": {
-        "tool_name": "Edit",
-        "path_pattern": "*.py"
-      },
-      "command": "black $FILE_PATH 2>/dev/null || true"
-    }
-  ]
-}
-```
+| Exit Code | Behavior |
+|-----------|----------|
+| `0` | Success. stdout processed, JSON parsed if present |
+| `2` | Blocking error. stderr used as error message, JSON ignored |
+| Other | Non-blocking error. stderr shown to user |
 
 ## Environment Variables
 
 Hooks receive context via environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `RIPPERDOC_PROJECT_DIR` | Project root directory |
+| `RIPPERDOC_SESSION_ID` | Current session ID |
+| `RIPPERDOC_TRANSCRIPT_PATH` | Path to conversation transcript JSON |
+| `RIPPERDOC_ENV_FILE` | Path to persist environment variables (SessionStart only) |
+
+Legacy variables (deprecated but still available):
 
 | Variable | Description |
 |----------|-------------|
@@ -183,6 +313,126 @@ Hooks receive context via environment variables:
 | `FILE_PATH` | File path (for file operations) |
 | `MESSAGE` | Notification message |
 | `SESSION_ID` | Current session ID |
+
+## Examples
+
+### Logging Tool Usage
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date)] Tool executed\" >> ~/.ripperdoc/tool.log"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Protect Sensitive Files
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys, json; data=json.load(sys.stdin); path=data.get('tool_input',{}).get('file_path',''); sys.exit(2) if '.env' in path else sys.exit(0)\" 2>&1 || echo '{\"decision\": \"deny\", \"reason\": \"Cannot edit .env files\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Desktop Notifications
+
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.message' | xargs -I {} notify-send 'Ripperdoc' '{}'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Auto-format on Edit
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | grep '\\.py$' | xargs -r black 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Block Agent Stop
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Check if the task is complete. If not, respond with {\"decision\": \"block\", \"reason\": \"Continue working on the task\"}",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Initialize Environment on Session Start
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'MY_VAR=value' >> \"$RIPPERDOC_ENV_FILE\""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ## Managing Hooks
 
@@ -196,6 +446,8 @@ Use the `/hooks` command:
 ## Best Practices
 
 1. **Test hooks carefully**: Use logging to debug hook behavior
-2. **Keep hooks fast**: Slow hooks impact responsiveness
+2. **Keep hooks fast**: Slow hooks impact responsiveness (default timeout: 60s)
 3. **Use local hooks for experiments**: `.ripperdoc/hooks.local.json` is gitignored
-4. **Handle errors gracefully**: Hooks should not crash Ripperdoc
+4. **Handle errors gracefully**: Exit code 0 for success, 2 for blocking errors
+5. **Parse stdin JSON**: Use `jq` or similar tools to extract input fields
+6. **Use prompt hooks for complex decisions**: LLM-based hooks for nuanced control

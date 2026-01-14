@@ -11,8 +11,9 @@ Configuration is loaded in order of precedence:
 
 1. **Global**: `~/.ripperdoc.json`
 2. **Project**: `.ripperdoc/config.json`
+3. **Local**: `.ripperdoc/config.local.json` (gitignored)
 
-Project configuration overrides global configuration.
+Project and local configuration override global configuration.
 
 ## Model Configuration
 
@@ -74,18 +75,121 @@ You can define multiple model profiles:
 Switch between profiles using the `/models` command or `--model` flag (use the profile name from `model_profiles`):
 
 ```bash
-ripperdoc --model fast
+ripperdoc --model reasoner
 ```
+
+### Model Profile Fields
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `provider` | Provider type | Yes |
+| `model` | Model identifier | Yes |
+| `api_key` | API key (or use env var) | Provider-specific |
+| `api_base` | API base URL | Provider-specific |
+| `auth_token` | Bearer token authentication | No |
+| `max_tokens` | Maximum output tokens | No |
+| `temperature` | Sampling temperature | No |
+| `thinking_mode` | Extended thinking mode | No |
+| `context_window` | Context window size | No |
+| `openai_tool_mode` | Tool calling mode for OpenAI | No |
+| `input_cost_per_million_tokens` | Cost tracking (input) | No |
+| `output_cost_per_million_tokens` | Cost tracking (output) | No |
 
 ### Provider Options
 
-| Provider | Required Env Var | API Base |
-|----------|-----------------|----------|
-| `openai_compatible` | Provider-specific | Provider-specific (for example `https://api.deepseek.com`) |
-| `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
-| `gemini` | `GEMINI_API_KEY` | Google AI API |
+| Provider | Required Config | Description |
+|----------|-----------------|-------------|
+| `openai_compatible` | `api_base`, `model` | Any OpenAI-compatible API |
+| `anthropic` | `api_key` | Anthropic Claude |
+| `gemini` | `api_key` | Google Gemini |
 
-### Custom API Endpoints
+### Authentication Options
+
+```json
+{
+  "model_profiles": {
+    "with_api_key": {
+      "provider": "openai_compatible",
+      "api_key": "sk-xxx",
+      "api_base": "https://api.example.com/v1",
+      "model": "model-name"
+    },
+    "with_bearer_token": {
+      "provider": "openai_compatible",
+      "auth_token": "your-bearer-token",
+      "api_base": "https://api.example.com/v1",
+      "model": "model-name"
+    }
+  }
+}
+```
+
+## Thinking Mode
+
+For models that support extended thinking (DeepSeek, Claude with extended thinking):
+
+```json
+{
+  "model_profiles": {
+    "reasoning": {
+      "provider": "openai_compatible",
+      "model": "deepseek-reasoner",
+      "api_key": "YOUR_DEEPSEEK_KEY",
+      "api_base": "https://api.deepseek.com",
+      "thinking_mode": "deepseek"
+    }
+  }
+}
+```
+
+Thinking mode options:
+
+| Mode | Description |
+|------|-------------|
+| `none` | Disable extended thinking (default) |
+| `deepseek` | DeepSeek-style thinking |
+| `anthropic` | Anthropic-style thinking (Claude) |
+
+### OpenAI Tool Mode
+
+Control how tools are presented to OpenAI-compatible models:
+
+```json
+{
+  "model_profiles": {
+    "custom": {
+      "provider": "openai_compatible",
+      "model": "model-name",
+      "openai_tool_mode": "native"
+    }
+  }
+}
+```
+
+Options:
+- `native` - Use OpenAI native tool calling
+- `text` - Use text-based tool descriptions
+
+## Cost Tracking
+
+Track token costs per model:
+
+```json
+{
+  "model_profiles": {
+    "expensive": {
+      "provider": "openai_compatible",
+      "model": "gpt-4",
+      "api_key": "YOUR_KEY",
+      "api_base": "https://api.openai.com/v1",
+      "input_cost_per_million_tokens": 30.0,
+      "output_cost_per_million_tokens": 60.0
+    }
+  }
+}
+```
+
+## Custom API Endpoints
 
 For OpenAI-compatible APIs:
 
@@ -106,36 +210,17 @@ For OpenAI-compatible APIs:
 }
 ```
 
-## Thinking Mode
-
-For models that support extended thinking (DeepSeek, Claude with extended thinking):
-
-```json
-{
-  "model_profiles": {
-    "reasoning": {
-      "provider": "openai_compatible",
-      "model": "deepseek-reasoner",
-      "api_key": "YOUR_DEEPSEEK_KEY",
-      "api_base": "https://api.deepseek.com",
-      "thinking_mode": "deepseek"
-    }
-  },
-  "model_pointers": {
-    "main": "reasoning",
-    "quick": "reasoning"
-  }
-}
-```
-
 ## Permission Settings
 
 ```json
 {
-  "permissions": {
-    "mode": "default",
-    "rules": []
-  }
+  "allowed_tools": ["Read", "Glob", "Grep", "LS", "Edit", "Bash"],
+  "bash_allow_rules": [
+    {"pattern": "npm *", "description": "Allow npm"}
+  ],
+  "bash_deny_rules": [
+    {"pattern": "rm -rf /", "description": "Block dangerous"}
+  ]
 }
 ```
 
@@ -149,6 +234,8 @@ See [Permissions](/docs/permissions) for detailed configuration.
 | `--yolo` | Skip permission prompts |
 | `--verbose` | Enable verbose output |
 | `--max-thinking-tokens N` | Set max thinking tokens |
+| `-c`, `--continue` | Continue last session |
+| `-p`, `--prompt TEXT` | Non-interactive prompt |
 
 ## Environment Variables
 

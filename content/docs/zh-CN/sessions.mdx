@@ -16,19 +16,29 @@ Ripperdoc 会保存会话历史，以支持上下文对话和会话恢复。
 
 ## 恢复会话
 
-恢复最近会话：
+### 继续最近会话
+
+继续当前目录中最近一次会话：
 
 ```bash
-ripperdoc --resume
+ripperdoc --continue
+# 或
+ripperdoc -c
+# 或使用别名
+rd -c
 ```
 
-这会打开一个交互式选择器，从最近会话中选择。
+这会自动恢复上一次会话，无需选择。
 
-恢复指定会话：
+### 交互式选择会话
 
-```bash
-ripperdoc --resume SESSION_ID
+在交互会话中使用 `/resume` 命令选择历史会话：
+
 ```
+> /resume
+```
+
+这会打开一个交互式选择器，浏览并选择历史会话。
 
 ## 会话命令
 
@@ -86,23 +96,29 @@ ripperdoc --resume SESSION_ID
 > /compact
 ```
 
+也可以提供自定义指令：
+
+```
+> /compact 重点保留 API 实现细节
+```
+
 ## 会话配置
 
-在 `.ripperdoc/config.json` 中配置会话行为：
+通过环境变量配置会话行为：
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_AUTO_COMPACT` | 启用自动压缩 | `true` |
+| `RIPPERDOC_CONTEXT_TOKENS` | 上下文窗口大小限制 | 模型默认值 |
+
+或在 `~/.ripperdoc.json` 中配置：
 
 ```json
 {
-  "memory": {
-    "compact_after_turns": 50
-  }
+  "auto_compact_enabled": true,
+  "context_token_limit": 100000
 }
 ```
-
-### 选项
-
-| 选项 | 说明 | 默认值 |
-|--------|-------------|---------|
-| `compact_after_turns` | 自动压缩前的轮次数 | 50 |
 
 ## 上下文长度处理
 
@@ -121,9 +137,12 @@ ripperdoc --resume SESSION_ID
 - 分析使用模式
 - 共享以便排查问题
 
+会话文件位置：`~/.ripperdoc/sessions/<project-hash>/<session-id>.json`
+
 ## 最佳实践
 
 1. **新任务用 `/clear`**：切换到无关任务时重新开始
 2. **长会话关注 `/cost`**：跟踪 token 用量
-3. **中断后用 `--resume`**：继续之前的工作
+3. **中断后用 `-c` 或 `--continue`**：继续之前的工作
 4. **主动压缩**：响应变慢时用 `/compact`
+5. **用 `/resume` 浏览历史**：交互式查找特定的历史会话

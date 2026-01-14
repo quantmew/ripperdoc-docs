@@ -1,13 +1,90 @@
 ---
 title: 命令参考
-description: Slash 命令完整列表
+description: CLI 选项和 Slash 命令完整列表
 ---
 
-Ripperdoc 提供 slash 命令来管理会话与配置。
+Ripperdoc 提供 CLI 选项用于启动配置，以及 slash 命令用于运行时会话管理。
 
-## 通用命令
+## CLI 选项
 
-### /help
+### 基本用法
+
+```bash
+ripperdoc [选项] [命令]
+```
+
+该命令也有别名 `rd`：
+
+```bash
+rd [选项]
+```
+
+### 启动选项
+
+| 选项 | 说明 |
+|--------|-------------|
+| `--version` | 显示版本信息 |
+| `--help` | 显示帮助信息 |
+| `--cwd PATH` | 设置工作目录 |
+| `--yolo` | 跳过所有权限提示 |
+| `--verbose` | 启用详细输出 |
+| `--model NAME` | 使用指定模型配置 |
+| `-c`, `--continue` | 继续最近一次会话 |
+
+### 提示选项
+
+| 选项 | 说明 |
+|--------|-------------|
+| `-p`, `--prompt TEXT` | 直接运行提示词（非交互模式） |
+| `--system-prompt TEXT` | 替换默认系统提示词 |
+| `--append-system-prompt TEXT` | 追加到默认系统提示词 |
+
+### 工具选项
+
+| 选项 | 说明 |
+|--------|-------------|
+| `--tools LIST` | 指定可用工具（逗号分隔） |
+
+工具值：
+- `""` - 禁用所有工具
+- `"default"` - 使用所有默认工具
+- `"Bash,Edit,Read"` - 指定工具列表
+
+### 显示选项
+
+| 选项 | 说明 |
+|--------|-------------|
+| `--show-full-thinking` | 显示完整推理内容 |
+| `--hide-full-thinking` | 显示截断的推理预览 |
+
+### 示例
+
+```bash
+# 启动交互会话
+ripperdoc
+
+# 继续上次会话
+ripperdoc --continue
+rd -c
+
+# 非交互式单次提示
+ripperdoc -p "解释这个代码库"
+
+# 自定义系统提示词
+ripperdoc --append-system-prompt "专注于安全性"
+
+# 限制工具
+ripperdoc --tools "Read,Glob,Grep"
+
+# YOLO 模式（无权限提示）
+ripperdoc --yolo
+```
+
+## Slash 命令
+
+### 通用命令
+
+#### /help
 
 显示可用命令与用法信息。
 
@@ -16,7 +93,7 @@ Ripperdoc 提供 slash 命令来管理会话与配置。
 > /help tools
 ```
 
-### /exit
+#### /exit
 
 退出当前会话。
 
@@ -24,7 +101,7 @@ Ripperdoc 提供 slash 命令来管理会话与配置。
 > /exit
 ```
 
-### /clear
+#### /clear
 
 清除对话历史并重新开始。
 
@@ -32,9 +109,9 @@ Ripperdoc 提供 slash 命令来管理会话与配置。
 > /clear
 ```
 
-## 会话命令
+### 会话命令
 
-### /status
+#### /status
 
 显示当前会话状态，包括消息数、token 与时长。
 
@@ -42,7 +119,7 @@ Ripperdoc 提供 slash 命令来管理会话与配置。
 > /status
 ```
 
-### /stats
+#### /stats
 
 显示更详细的会话统计。
 
@@ -50,7 +127,7 @@ Ripperdoc 提供 slash 命令来管理会话与配置。
 > /stats
 ```
 
-### /cost
+#### /cost
 
 显示 token 使用与预估费用。
 
@@ -58,25 +135,26 @@ Ripperdoc 提供 slash 命令来管理会话与配置。
 > /cost
 ```
 
-### /compact
+#### /compact
 
 手动压缩对话以减少上下文体积。
 
 ```
 > /compact
+> /compact 重点关注 API 细节
 ```
 
-### /resume
+#### /resume
 
-恢复之前的会话（启动时使用）。
+交互式选择并恢复之前的会话。
 
-```bash
-ripperdoc --resume
+```
+> /resume
 ```
 
-## 配置命令
+### 配置命令
 
-### /config
+#### /config
 
 查看或修改配置。
 
@@ -85,7 +163,7 @@ ripperdoc --resume
 > /config set model.timeout 180
 ```
 
-### /models
+#### /models
 
 列出并切换模型配置。
 
@@ -94,9 +172,9 @@ ripperdoc --resume
 > /models use fast
 ```
 
-## 工具命令
+### 工具命令
 
-### /tools
+#### /tools
 
 列出可用工具。
 
@@ -104,7 +182,7 @@ ripperdoc --resume
 > /tools
 ```
 
-### /permissions
+#### /permissions
 
 管理权限规则。
 
@@ -114,9 +192,9 @@ ripperdoc --resume
 > /permissions add allow Bash "npm test"
 ```
 
-## 扩展命令
+### 扩展命令
 
-### /hooks
+#### /hooks
 
 管理 hooks 配置。
 
@@ -126,7 +204,7 @@ ripperdoc --resume
 > /hooks reload
 ```
 
-### /skills
+#### /skills
 
 列出可用技能。
 
@@ -134,7 +212,7 @@ ripperdoc --resume
 > /skills
 ```
 
-### /skill
+#### /skill
 
 加载技能。
 
@@ -143,7 +221,7 @@ ripperdoc --resume
 > /skill pptx
 ```
 
-### /agents
+#### /agents
 
 列出代理定义。
 
@@ -151,7 +229,7 @@ ripperdoc --resume
 > /agents
 ```
 
-### /tasks
+#### /tasks
 
 列出正在运行的子代理任务。
 
@@ -159,7 +237,7 @@ ripperdoc --resume
 > /tasks
 ```
 
-### /mcp
+#### /mcp
 
 管理 MCP 服务器连接。
 
@@ -167,9 +245,9 @@ ripperdoc --resume
 > /mcp
 ```
 
-## 任务管理
+### 任务管理
 
-### /todos
+#### /todos
 
 查看待办列表。
 
@@ -177,7 +255,7 @@ ripperdoc --resume
 > /todos
 ```
 
-### /todo
+#### /todo
 
 添加或管理待办项。
 
@@ -186,9 +264,9 @@ ripperdoc --resume
 > /todo done 1
 ```
 
-## 记忆命令
+### 记忆命令
 
-### /memory
+#### /memory
 
 查看并管理对话记忆。
 
@@ -196,7 +274,7 @@ ripperdoc --resume
 > /memory
 ```
 
-### /context
+#### /context
 
 查看当前上下文信息。
 
@@ -204,9 +282,9 @@ ripperdoc --resume
 > /context
 ```
 
-## 诊断
+### 诊断
 
-### /doctor
+#### /doctor
 
 运行诊断检查配置与连通性。
 

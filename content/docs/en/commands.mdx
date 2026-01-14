@@ -1,13 +1,90 @@
 ---
 title: Commands Reference
-description: Complete list of slash commands
+description: Complete list of CLI options and slash commands
 ---
 
-Ripperdoc provides slash commands for managing sessions and configuration.
+Ripperdoc provides both CLI options for startup configuration and slash commands for managing sessions during runtime.
 
-## General Commands
+## CLI Options
 
-### /help
+### Basic Usage
+
+```bash
+ripperdoc [OPTIONS] [COMMAND]
+```
+
+The command also has an alias `rd`:
+
+```bash
+rd [OPTIONS]
+```
+
+### Startup Options
+
+| Option | Description |
+|--------|-------------|
+| `--version` | Show version information |
+| `--help` | Show help message |
+| `--cwd PATH` | Set working directory |
+| `--yolo` | Skip all permission prompts |
+| `--verbose` | Enable verbose output |
+| `--model NAME` | Use a specific model profile |
+| `-c`, `--continue` | Continue the most recent session |
+
+### Prompt Options
+
+| Option | Description |
+|--------|-------------|
+| `-p`, `--prompt TEXT` | Run with a direct prompt (non-interactive) |
+| `--system-prompt TEXT` | Replace the default system prompt |
+| `--append-system-prompt TEXT` | Append to the default system prompt |
+
+### Tool Options
+
+| Option | Description |
+|--------|-------------|
+| `--tools LIST` | Specify available tools (comma-separated) |
+
+Tool values:
+- `""` - Disable all tools
+- `"default"` - Use all default tools
+- `"Bash,Edit,Read"` - Specific tool list
+
+### Display Options
+
+| Option | Description |
+|--------|-------------|
+| `--show-full-thinking` | Show full reasoning content |
+| `--hide-full-thinking` | Show truncated reasoning preview |
+
+### Examples
+
+```bash
+# Start interactive session
+ripperdoc
+
+# Continue last session
+ripperdoc --continue
+rd -c
+
+# Non-interactive single prompt
+ripperdoc -p "Explain this codebase"
+
+# Custom system prompt
+ripperdoc --append-system-prompt "Focus on security"
+
+# Limited tools
+ripperdoc --tools "Read,Glob,Grep"
+
+# YOLO mode (no permission prompts)
+ripperdoc --yolo
+```
+
+## Slash Commands
+
+### General Commands
+
+#### /help
 
 Show available commands and usage information.
 
@@ -16,7 +93,7 @@ Show available commands and usage information.
 > /help tools
 ```
 
-### /exit
+#### /exit
 
 Exit the current session.
 
@@ -24,7 +101,7 @@ Exit the current session.
 > /exit
 ```
 
-### /clear
+#### /clear
 
 Clear the conversation history and start fresh.
 
@@ -32,9 +109,9 @@ Clear the conversation history and start fresh.
 > /clear
 ```
 
-## Session Commands
+### Session Commands
 
-### /status
+#### /status
 
 Show current session status including message count, tokens, and duration.
 
@@ -42,7 +119,7 @@ Show current session status including message count, tokens, and duration.
 > /status
 ```
 
-### /stats
+#### /stats
 
 Show detailed session statistics.
 
@@ -50,7 +127,7 @@ Show detailed session statistics.
 > /stats
 ```
 
-### /cost
+#### /cost
 
 Show token usage and estimated costs.
 
@@ -58,25 +135,26 @@ Show token usage and estimated costs.
 > /cost
 ```
 
-### /compact
+#### /compact
 
 Manually compact the conversation to reduce context size.
 
 ```
 > /compact
+> /compact Focus on API details
 ```
 
-### /resume
+#### /resume
 
-Resume a previous session (when starting Ripperdoc).
+Interactively select and resume a previous session.
 
-```bash
-ripperdoc --resume
+```
+> /resume
 ```
 
-## Configuration Commands
+### Configuration Commands
 
-### /config
+#### /config
 
 View or modify configuration.
 
@@ -85,7 +163,7 @@ View or modify configuration.
 > /config set model.timeout 180
 ```
 
-### /models
+#### /models
 
 List and switch between model profiles.
 
@@ -94,9 +172,9 @@ List and switch between model profiles.
 > /models use fast
 ```
 
-## Tool Commands
+### Tool Commands
 
-### /tools
+#### /tools
 
 List available tools.
 
@@ -104,7 +182,7 @@ List available tools.
 > /tools
 ```
 
-### /permissions
+#### /permissions
 
 Manage permission rules.
 
@@ -114,9 +192,9 @@ Manage permission rules.
 > /permissions add allow Bash "npm test"
 ```
 
-## Extension Commands
+### Extension Commands
 
-### /hooks
+#### /hooks
 
 Manage hooks configuration.
 
@@ -126,7 +204,7 @@ Manage hooks configuration.
 > /hooks reload
 ```
 
-### /skills
+#### /skills
 
 List available skills.
 
@@ -134,7 +212,7 @@ List available skills.
 > /skills
 ```
 
-### /skill
+#### /skill
 
 Load a skill.
 
@@ -143,7 +221,7 @@ Load a skill.
 > /skill pptx
 ```
 
-### /agents
+#### /agents
 
 List agent definitions.
 
@@ -151,7 +229,7 @@ List agent definitions.
 > /agents
 ```
 
-### /tasks
+#### /tasks
 
 List running subagent tasks.
 
@@ -159,7 +237,7 @@ List running subagent tasks.
 > /tasks
 ```
 
-### /mcp
+#### /mcp
 
 Manage MCP server connections.
 
@@ -167,9 +245,9 @@ Manage MCP server connections.
 > /mcp
 ```
 
-## Task Management
+### Task Management
 
-### /todos
+#### /todos
 
 View the todo list.
 
@@ -177,7 +255,7 @@ View the todo list.
 > /todos
 ```
 
-### /todo
+#### /todo
 
 Add or manage todo items.
 
@@ -186,9 +264,9 @@ Add or manage todo items.
 > /todo done 1
 ```
 
-## Memory Commands
+### Memory Commands
 
-### /memory
+#### /memory
 
 View and manage conversation memory.
 
@@ -196,7 +274,7 @@ View and manage conversation memory.
 > /memory
 ```
 
-### /context
+#### /context
 
 View current context information.
 
@@ -204,9 +282,9 @@ View current context information.
 > /context
 ```
 
-## Diagnostics
+### Diagnostics
 
-### /doctor
+#### /doctor
 
 Run diagnostics to check configuration and connectivity.
 

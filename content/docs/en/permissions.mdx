@@ -29,48 +29,86 @@ ripperdoc --yolo
 
 **Warning**: Use YOLO mode only in trusted environments where you're comfortable with the AI making changes without confirmation.
 
-## Permission Rules
+## Permission Configuration
 
-Configure permission rules in `.ripperdoc/config.json`:
+Permissions are configured in project-level files:
+
+1. `.ripperdoc/config.json` - Main project configuration
+2. `.ripperdoc/config.local.json` - Local overrides (gitignored)
+
+### Configuration Schema
 
 ```json
 {
-  "permissions": {
-    "mode": "default",
-    "rules": [
-      {
-        "tool": "Bash",
-        "pattern": "npm test",
-        "action": "allow"
-      },
-      {
-        "tool": "Edit",
-        "path": "*.md",
-        "action": "allow"
-      },
-      {
-        "tool": "Bash",
-        "pattern": "rm -rf",
-        "action": "deny"
-      }
-    ]
-  }
+  "allowed_tools": ["Read", "Glob", "Grep", "LS", "Edit", "Bash"],
+  "working_directories": ["/path/to/allowed/dir"],
+  "bash_allow_rules": [
+    {
+      "pattern": "npm test",
+      "description": "Allow running tests"
+    },
+    {
+      "pattern": "git status",
+      "description": "Allow git status"
+    }
+  ],
+  "bash_deny_rules": [
+    {
+      "pattern": "rm -rf /",
+      "description": "Prevent destructive commands"
+    }
+  ]
 }
 ```
 
-### Rule Properties
+### Configuration Fields
 
-| Property | Description |
-|----------|-------------|
-| `tool` | Tool name to match |
-| `pattern` | Command or path pattern (supports glob) |
-| `action` | `allow`, `deny`, or `ask` |
+| Field | Description |
+|-------|-------------|
+| `allowed_tools` | List of tools the AI can use |
+| `working_directories` | Directories where operations are allowed |
+| `bash_allow_rules` | Rules to auto-approve bash commands |
+| `bash_deny_rules` | Rules to auto-deny bash commands |
 
-### Rule Actions
+### Rule Pattern Syntax
 
-- **allow**: Automatically approve matching operations
-- **deny**: Automatically reject matching operations
-- **ask**: Always prompt for this operation
+Rules use glob-style patterns:
+
+- `npm test` - Exact match
+- `npm *` - Prefix match
+- `*test*` - Contains match
+- `git @(status|diff|log)` - Multiple alternatives
+
+### Example Configurations
+
+#### Development Project
+
+```json
+{
+  "allowed_tools": ["Read", "Glob", "Grep", "LS", "Edit", "Write", "Bash"],
+  "working_directories": ["."],
+  "bash_allow_rules": [
+    {"pattern": "npm *", "description": "Allow npm commands"},
+    {"pattern": "git *", "description": "Allow git commands"},
+    {"pattern": "python *", "description": "Allow python commands"}
+  ],
+  "bash_deny_rules": [
+    {"pattern": "rm -rf /*", "description": "Prevent recursive delete from root"}
+  ]
+}
+```
+
+#### Read-Only Analysis
+
+```json
+{
+  "allowed_tools": ["Read", "Glob", "Grep", "LS"],
+  "bash_allow_rules": [
+    {"pattern": "ls *", "description": "Allow listing"},
+    {"pattern": "cat *", "description": "Allow reading"}
+  ]
+}
+```
 
 ## Read-Only Operations
 
@@ -116,6 +154,20 @@ Use the `/permissions` command to view and manage permissions:
 > /permissions remove 1
 ```
 
+## Local Configuration Override
+
+Use `.ripperdoc/config.local.json` for local-only settings that shouldn't be committed:
+
+```json
+{
+  "bash_allow_rules": [
+    {"pattern": "docker *", "description": "Local docker access"}
+  ]
+}
+```
+
+Add `.ripperdoc/config.local.json` to your `.gitignore`.
+
 ## Best Practices
 
 1. **Start with defaults**: Use the default permission system until you understand your workflow
@@ -123,3 +175,4 @@ Use the `/permissions` command to view and manage permissions:
 3. **Deny dangerous patterns**: Explicitly deny patterns like `rm -rf /`
 4. **Use sandbox for exploration**: Use sandbox mode when exploring unfamiliar codebases
 5. **Review before YOLO**: Only use YOLO mode after reviewing what Ripperdoc will do
+6. **Use local config**: Put personal/machine-specific rules in `config.local.json`

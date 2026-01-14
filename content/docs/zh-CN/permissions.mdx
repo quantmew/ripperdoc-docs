@@ -29,48 +29,86 @@ ripperdoc --yolo
 
 **警告**：仅在可信环境中使用 YOLO 模式，确保你能接受 AI 在无需确认的情况下进行修改。
 
-## 权限规则
+## 权限配置
 
-在 `.ripperdoc/config.json` 中配置权限规则：
+权限在项目级文件中配置：
+
+1. `.ripperdoc/config.json` - 主项目配置
+2. `.ripperdoc/config.local.json` - 本地覆盖（已在 gitignore 中）
+
+### 配置 Schema
 
 ```json
 {
-  "permissions": {
-    "mode": "default",
-    "rules": [
-      {
-        "tool": "Bash",
-        "pattern": "npm test",
-        "action": "allow"
-      },
-      {
-        "tool": "Edit",
-        "path": "*.md",
-        "action": "allow"
-      },
-      {
-        "tool": "Bash",
-        "pattern": "rm -rf",
-        "action": "deny"
-      }
-    ]
-  }
+  "allowed_tools": ["Read", "Glob", "Grep", "LS", "Edit", "Bash"],
+  "working_directories": ["/path/to/allowed/dir"],
+  "bash_allow_rules": [
+    {
+      "pattern": "npm test",
+      "description": "Allow running tests"
+    },
+    {
+      "pattern": "git status",
+      "description": "Allow git status"
+    }
+  ],
+  "bash_deny_rules": [
+    {
+      "pattern": "rm -rf /",
+      "description": "Prevent destructive commands"
+    }
+  ]
 }
 ```
 
-### 规则属性
+### 配置字段
 
-| 属性 | 说明 |
-|----------|-------------|
-| `tool` | 匹配的工具名 |
-| `pattern` | 命令或路径模式（支持 glob） |
-| `action` | `allow`、`deny` 或 `ask` |
+| 字段 | 说明 |
+|-------|-------------|
+| `allowed_tools` | AI 可使用的工具列表 |
+| `working_directories` | 允许操作的目录 |
+| `bash_allow_rules` | 自动批准 bash 命令的规则 |
+| `bash_deny_rules` | 自动拒绝 bash 命令的规则 |
 
-### 规则行为
+### 规则模式语法
 
-- **allow**：自动批准匹配的操作
-- **deny**：自动拒绝匹配的操作
-- **ask**：每次都询问
+规则使用 glob 风格的模式：
+
+- `npm test` - 精确匹配
+- `npm *` - 前缀匹配
+- `*test*` - 包含匹配
+- `git @(status|diff|log)` - 多选项
+
+### 配置示例
+
+#### 开发项目
+
+```json
+{
+  "allowed_tools": ["Read", "Glob", "Grep", "LS", "Edit", "Write", "Bash"],
+  "working_directories": ["."],
+  "bash_allow_rules": [
+    {"pattern": "npm *", "description": "Allow npm commands"},
+    {"pattern": "git *", "description": "Allow git commands"},
+    {"pattern": "python *", "description": "Allow python commands"}
+  ],
+  "bash_deny_rules": [
+    {"pattern": "rm -rf /*", "description": "Prevent recursive delete from root"}
+  ]
+}
+```
+
+#### 只读分析
+
+```json
+{
+  "allowed_tools": ["Read", "Glob", "Grep", "LS"],
+  "bash_allow_rules": [
+    {"pattern": "ls *", "description": "Allow listing"},
+    {"pattern": "cat *", "description": "Allow reading"}
+  ]
+}
+```
 
 ## 只读操作
 
@@ -116,6 +154,20 @@ Sandbox 模式：
 > /permissions remove 1
 ```
 
+## 本地配置覆盖
+
+使用 `.ripperdoc/config.local.json` 存放不应提交的本地设置：
+
+```json
+{
+  "bash_allow_rules": [
+    {"pattern": "docker *", "description": "Local docker access"}
+  ]
+}
+```
+
+将 `.ripperdoc/config.local.json` 加入 `.gitignore`。
+
 ## 最佳实践
 
 1. **先用默认设置**：在熟悉流程前，先使用默认权限系统
@@ -123,3 +175,4 @@ Sandbox 模式：
 3. **显式拒绝危险模式**：例如 `rm -rf /`
 4. **探索时使用 sandbox**：在不熟悉的代码库里用 sandbox 模式
 5. **YOLO 需谨慎**：只有在确认风险可控后再启用 YOLO
+6. **使用本地配置**：把个人/机器特定的规则放在 `config.local.json`

@@ -3,7 +3,7 @@ title: 工具
 description: Ripperdoc 内置可用工具
 ---
 
-Ripperdoc 内置 23 个工具，让 AI 能与你的代码库和系统交互。
+Ripperdoc 内置多个工具，让 AI 能与你的代码库和系统交互。
 
 ## 文件操作
 
@@ -97,6 +97,79 @@ Run in background: npm run build
 ```
 List: /path/to/directory
 ```
+
+## LSP 工具
+
+### LSP
+
+与语言服务器协议（LSP）服务器交互，获取代码智能功能。
+
+支持的操作：
+
+| 操作 | 说明 |
+|-----------|-------------|
+| `goToDefinition` | 查找符号定义位置 |
+| `findReferences` | 查找符号的所有引用 |
+| `hover` | 获取悬停信息（文档、类型信息） |
+| `documentSymbol` | 获取文档中的所有符号 |
+| `workspaceSymbol` | 在工作区中搜索符号 |
+| `goToImplementation` | 查找接口的实现 |
+
+使用示例：
+
+```
+LSP goToDefinition: src/main.py line 12, character 8
+LSP findReferences: src/api.py line 45, character 15
+LSP documentSymbol: src/models.py
+```
+
+### LSP 配置
+
+LSP 服务器在以下 JSON 文件中配置（按顺序加载）：
+
+1. `~/.ripperdoc/lsp.json` - 全局配置
+2. `~/.lsp.json` - 备选全局位置
+3. `.ripperdoc/lsp.json` - 项目配置
+4. `.lsp.json` - 备选项目位置
+
+配置示例：
+
+```json
+{
+  "servers": {
+    "python": {
+      "command": "pylsp",
+      "languages": ["python"],
+      "extensions": [".py"]
+    },
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"],
+      "languages": ["typescript", "javascript"],
+      "extensions": [".ts", ".tsx", ".js", ".jsx"]
+    },
+    "rust": {
+      "command": "rust-analyzer",
+      "languages": ["rust"],
+      "rootPatterns": ["Cargo.toml"]
+    }
+  }
+}
+```
+
+配置字段：
+
+| 字段 | 说明 |
+|-------|-------------|
+| `command` | LSP 服务器命令（必需） |
+| `args` | 命令参数 |
+| `languages` | 要匹配的语言 ID |
+| `extensions` | 要匹配的文件扩展名 |
+| `extensionToLanguage` | 扩展名到语言 ID 的映射 |
+| `rootPatterns` | 标识项目根目录的文件/目录 |
+| `env` | 服务器环境变量 |
+| `initializationOptions` | LSP 初始化选项 |
+| `settings` | LSP 工作区设置 |
 
 ## 规划与跟踪
 

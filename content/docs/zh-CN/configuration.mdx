@@ -11,8 +11,9 @@ Ripperdoc 可以通过配置文件或环境变量进行设置。
 
 1. **全局**：`~/.ripperdoc.json`
 2. **项目**：`.ripperdoc/config.json`
+3. **本地**：`.ripperdoc/config.local.json`（已在 gitignore 中）
 
-项目配置会覆盖全局配置。
+项目和本地配置会覆盖全局配置。
 
 ## 模型配置
 
@@ -74,18 +75,121 @@ Ripperdoc 可以通过配置文件或环境变量进行设置。
 使用 `/models` 命令或 `--model` 参数切换配置（使用 `model_profiles` 中的名字）：
 
 ```bash
-ripperdoc --model fast
+ripperdoc --model reasoner
 ```
+
+### 模型配置字段
+
+| 字段 | 说明 | 必需 |
+|-------|-------------|----------|
+| `provider` | 提供商类型 | 是 |
+| `model` | 模型标识符 | 是 |
+| `api_key` | API 密钥（或使用环境变量） | 依提供商而定 |
+| `api_base` | API 基础 URL | 依提供商而定 |
+| `auth_token` | Bearer token 认证 | 否 |
+| `max_tokens` | 最大输出 token | 否 |
+| `temperature` | 采样温度 | 否 |
+| `thinking_mode` | 扩展思考模式 | 否 |
+| `context_window` | 上下文窗口大小 | 否 |
+| `openai_tool_mode` | OpenAI 工具调用模式 | 否 |
+| `input_cost_per_million_tokens` | 费用追踪（输入） | 否 |
+| `output_cost_per_million_tokens` | 费用追踪（输出） | 否 |
 
 ### 提供商选项
 
-| Provider | 必需环境变量 | API Base |
-|----------|-----------------|----------|
-| `openai_compatible` | 依具体提供商而定 | 依具体提供商而定（例如 `https://api.deepseek.com`） |
-| `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
-| `gemini` | `GEMINI_API_KEY` | Google AI API |
+| Provider | 必需配置 | 说明 |
+|----------|-----------------|-------------|
+| `openai_compatible` | `api_base`, `model` | 任意 OpenAI 兼容 API |
+| `anthropic` | `api_key` | Anthropic Claude |
+| `gemini` | `api_key` | Google Gemini |
 
-### 自定义 API 端点
+### 认证选项
+
+```json
+{
+  "model_profiles": {
+    "with_api_key": {
+      "provider": "openai_compatible",
+      "api_key": "sk-xxx",
+      "api_base": "https://api.example.com/v1",
+      "model": "model-name"
+    },
+    "with_bearer_token": {
+      "provider": "openai_compatible",
+      "auth_token": "your-bearer-token",
+      "api_base": "https://api.example.com/v1",
+      "model": "model-name"
+    }
+  }
+}
+```
+
+## Thinking 模式
+
+针对支持扩展思考的模型（DeepSeek、带扩展思考的 Claude）：
+
+```json
+{
+  "model_profiles": {
+    "reasoning": {
+      "provider": "openai_compatible",
+      "model": "deepseek-reasoner",
+      "api_key": "YOUR_DEEPSEEK_KEY",
+      "api_base": "https://api.deepseek.com",
+      "thinking_mode": "deepseek"
+    }
+  }
+}
+```
+
+Thinking 模式选项：
+
+| 模式 | 说明 |
+|------|-------------|
+| `none` | 禁用扩展思考（默认） |
+| `deepseek` | DeepSeek 风格思考 |
+| `anthropic` | Anthropic 风格思考（Claude） |
+
+### OpenAI 工具模式
+
+控制工具如何呈现给 OpenAI 兼容模型：
+
+```json
+{
+  "model_profiles": {
+    "custom": {
+      "provider": "openai_compatible",
+      "model": "model-name",
+      "openai_tool_mode": "native"
+    }
+  }
+}
+```
+
+选项：
+- `native` - 使用 OpenAI 原生工具调用
+- `text` - 使用文本形式的工具描述
+
+## 费用追踪
+
+按模型追踪 token 费用：
+
+```json
+{
+  "model_profiles": {
+    "expensive": {
+      "provider": "openai_compatible",
+      "model": "gpt-4",
+      "api_key": "YOUR_KEY",
+      "api_base": "https://api.openai.com/v1",
+      "input_cost_per_million_tokens": 30.0,
+      "output_cost_per_million_tokens": 60.0
+    }
+  }
+}
+```
+
+## 自定义 API 端点
 
 针对 OpenAI 兼容接口：
 
@@ -106,36 +210,17 @@ ripperdoc --model fast
 }
 ```
 
-## Thinking 模式
-
-针对支持扩展思考的模型（DeepSeek、带扩展思考的 Claude）：
-
-```json
-{
-  "model_profiles": {
-    "reasoning": {
-      "provider": "openai_compatible",
-      "model": "deepseek-reasoner",
-      "api_key": "YOUR_DEEPSEEK_KEY",
-      "api_base": "https://api.deepseek.com",
-      "thinking_mode": "deepseek"
-    }
-  },
-  "model_pointers": {
-    "main": "reasoning",
-    "quick": "reasoning"
-  }
-}
-```
-
 ## 权限设置
 
 ```json
 {
-  "permissions": {
-    "mode": "default",
-    "rules": []
-  }
+  "allowed_tools": ["Read", "Glob", "Grep", "LS", "Edit", "Bash"],
+  "bash_allow_rules": [
+    {"pattern": "npm *", "description": "Allow npm"}
+  ],
+  "bash_deny_rules": [
+    {"pattern": "rm -rf /", "description": "Block dangerous"}
+  ]
 }
 ```
 
@@ -149,6 +234,8 @@ ripperdoc --model fast
 | `--yolo` | 跳过权限确认 |
 | `--verbose` | 启用详细输出 |
 | `--max-thinking-tokens N` | 设置最大思考 token 数 |
+| `-c`, `--continue` | 继续上次会话 |
+| `-p`, `--prompt TEXT` | 非交互式提示 |
 
 ## 环境变量
 

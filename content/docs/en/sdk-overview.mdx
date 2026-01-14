@@ -18,38 +18,180 @@ pip install ripperdoc
 For simple, single-turn queries:
 
 ```python
-from ripperdoc.sdk import query
+import asyncio
+from ripperdoc.sdk import query, RipperdocOptions
 
-result = await query(
-    "Explain what this function does",
-    system_prompt="You are a helpful coding assistant.",
-    model="main"
-)
-print(result.content)
+async def main():
+    options = RipperdocOptions(
+        model="main",
+        yolo_mode=True
+    )
+
+    async for message in query("Explain what this function does", options):
+        if hasattr(message, 'content'):
+            print(message.content)
+
+asyncio.run(main())
 ```
 
 ### Session-Based Client
 
-For multi-turn conversations:
+For multi-turn conversations with full control:
 
 ```python
-from ripperdoc.sdk import RipperdocClient
+import asyncio
+from ripperdoc.sdk import RipperdocClient, RipperdocOptions
 
-client = RipperdocClient(
-    model="main",
-    yolo_mode=True
+async def main():
+    options = RipperdocOptions(
+        model="main",
+        yolo_mode=True,
+        verbose=True
+    )
+
+    async with RipperdocClient(options=options) as client:
+        # Start a conversation
+        await client.query("What files are in this project?")
+        async for message in client.receive_messages():
+            if hasattr(message, 'content'):
+                print(message.content)
+
+        # Continue the conversation
+        await client.query("Read the main.py file")
+        async for message in client.receive_messages():
+            if hasattr(message, 'content'):
+                print(message.content)
+
+asyncio.run(main())
+```
+
+## RipperdocOptions
+
+The `RipperdocOptions` dataclass configures SDK behavior:
+
+```python
+from ripperdoc.sdk import RipperdocOptions
+
+options = RipperdocOptions(
+    # Tool configuration
+    tools=None,                    # Custom tools list (None = defaults)
+    allowed_tools=["Read", "Glob"],  # Whitelist specific tools
+    disallowed_tools=["Bash"],     # Blacklist specific tools
+
+    # Execution mode
+    yolo_mode=False,               # Skip permission prompts
+    verbose=False,                 # Enable verbose output
+
+    # Model settings
+    model="main",                  # Model profile name
+    max_thinking_tokens=0,         # Extended thinking tokens
+
+    # Context
+    context={},                    # Custom context variables
+    system_prompt=None,            # Override system prompt
+    additional_instructions=None,  # Additional instructions
+
+    # Permissions
+    permission_checker=None,       # Custom permission checker
+
+    # Working directory
+    cwd=None                       # Working directory path
+)
+```
+
+### Tool Filtering
+
+Filter available tools:
+
+```python
+# Only allow read operations
+options = RipperdocOptions(
+    allowed_tools=["Read", "Glob", "Grep", "LS"]
 )
 
-# Start a conversation
-response = await client.query("What files are in this project?")
-print(response.content)
+# Allow all except bash
+options = RipperdocOptions(
+    disallowed_tools=["Bash"]
+)
+```
 
-# Continue the conversation
-response = await client.query("Read the main.py file")
-print(response.content)
+### Custom Permission Checker
 
-# Clean up
-await client.close()
+Implement custom permission logic:
+
+```python
+from ripperdoc.sdk import RipperdocOptions
+from ripperdoc.core.permissions import PermissionResult
+
+async def my_permission_checker(tool, input_data):
+    tool_name = getattr(tool, 'name', tool.__class__.__name__)
+
+    # Auto-approve read operations
+    if tool_name in ['Read', 'Glob', 'Grep']:
+        return PermissionResult(allowed=True)
+
+    # Deny dangerous commands
+    if tool_name == 'Bash':
+        command = input_data.get('command', '')
+        if 'rm -rf' in command:
+            return PermissionResult(
+                allowed=False,
+                reason="Dangerous command blocked"
+            )
+
+    # Ask for others
+    return PermissionResult(allowed=True)
+
+options = RipperdocOptions(
+    permission_checker=my_permission_checker
+)
+```
+
+## Message Types
+
+The SDK yields different message types:
+
+```python
+from ripperdoc.utils.messages import (
+    UserMessage,
+    AssistantMessage,
+    ProgressMessage
+)
+
+async for message in client.receive_messages():
+    if isinstance(message, AssistantMessage):
+        print(f"Assistant: {message.content}")
+    elif isinstance(message, ProgressMessage):
+        print(f"Progress: {message.status}")
+```
+
+### ProgressMessage
+
+Progress messages indicate ongoing operations:
+
+```python
+async for message in client.receive_messages():
+    if hasattr(message, 'type') and message.type == 'progress':
+        print(f"Status: {message.status}")
+        if hasattr(message, 'tool_name'):
+            print(f"Running tool: {message.tool_name}")
+```
+
+## Thinking Mode
+
+For models that support extended thinking:
+
+```python
+options = RipperdocOptions(
+    model="reasoner",  # Use a model profile with thinking enabled
+    max_thinking_tokens=8192
+)
+
+async for message in query("Solve this complex problem", options):
+    if hasattr(message, 'thinking'):
+        print(f"Thinking: {message.thinking}")
+    if hasattr(message, 'content'):
+        print(f"Response: {message.content}")
 ```
 
 ## Use Cases
@@ -57,33 +199,59 @@ await client.close()
 ### Code Analysis
 
 ```python
-from ripperdoc.sdk import query
+from ripperdoc.sdk import query, RipperdocOptions
 
-analysis = await query(
-    f"Analyze this code for security issues:\n\n```python\n{code}\n```",
-    system_prompt="You are a security expert."
-)
+async def analyze_code(code: str):
+    options = RipperdocOptions(
+        system_prompt="You are a security expert.",
+        allowed_tools=["Read"]
+    )
+
+    async for message in query(
+        f"Analyze this code for security issues:\n\n```python\n{code}\n```",
+        options
+    ):
+        if hasattr(message, 'content'):
+            return message.content
 ```
 
 ### Automated Refactoring
 
 ```python
-from ripperdoc.sdk import RipperdocClient
+from ripperdoc.sdk import RipperdocClient, RipperdocOptions
 
-async with RipperdocClient(yolo_mode=True) as client:
-    await client.query("Find all deprecated API calls")
-    await client.query("Update them to use the new API")
+async def refactor_codebase():
+    options = RipperdocOptions(
+        yolo_mode=True,
+        allowed_tools=["Read", "Glob", "Grep", "Edit"]
+    )
+
+    async with RipperdocClient(options=options) as client:
+        await client.query("Find all deprecated API calls")
+        async for msg in client.receive_messages():
+            pass  # Process results
+
+        await client.query("Update them to use the new API")
+        async for msg in client.receive_messages():
+            pass  # Process results
 ```
 
 ### Documentation Generation
 
 ```python
-from ripperdoc.sdk import query
+from ripperdoc.sdk import query, RipperdocOptions
 
-docs = await query(
-    "Generate API documentation for all public functions in src/api/",
-    tools=["Read", "Glob", "Grep"]
-)
+async def generate_docs():
+    options = RipperdocOptions(
+        allowed_tools=["Read", "Glob", "Grep"]
+    )
+
+    async for message in query(
+        "Generate API documentation for all public functions in src/api/",
+        options
+    ):
+        if hasattr(message, 'content'):
+            print(message.content)
 ```
 
 ## SDK Features
@@ -93,6 +261,9 @@ docs = await query(
 - **Session management**: Maintain conversation context
 - **Token tracking**: Monitor usage and costs
 - **Custom prompts**: Full control over system prompts
+- **Permission control**: Custom permission logic
+- **Streaming**: Real-time message streaming
+- **Thinking mode**: Extended reasoning support
 
 ## Next Steps
 

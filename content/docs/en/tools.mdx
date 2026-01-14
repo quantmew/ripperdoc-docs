@@ -3,7 +3,7 @@ title: Tools
 description: Built-in tools available in Ripperdoc
 ---
 
-Ripperdoc comes with 23 built-in tools that enable the AI to interact with your codebase and system.
+Ripperdoc comes with built-in tools that enable the AI to interact with your codebase and system.
 
 ## File Operations
 
@@ -97,6 +97,79 @@ List directory contents.
 ```
 List: /path/to/directory
 ```
+
+## LSP Tools
+
+### LSP
+
+Interact with Language Server Protocol (LSP) servers for code intelligence.
+
+Supported operations:
+
+| Operation | Description |
+|-----------|-------------|
+| `goToDefinition` | Find where a symbol is defined |
+| `findReferences` | Find all references to a symbol |
+| `hover` | Get hover information (documentation, type info) |
+| `documentSymbol` | Get all symbols in a document |
+| `workspaceSymbol` | Search for symbols across the workspace |
+| `goToImplementation` | Find implementations of an interface |
+
+Example usage:
+
+```
+LSP goToDefinition: src/main.py line 12, character 8
+LSP findReferences: src/api.py line 45, character 15
+LSP documentSymbol: src/models.py
+```
+
+### LSP Configuration
+
+LSP servers are configured in JSON files (loaded in order):
+
+1. `~/.ripperdoc/lsp.json` - Global configuration
+2. `~/.lsp.json` - Alternative global location
+3. `.ripperdoc/lsp.json` - Project configuration
+4. `.lsp.json` - Alternative project location
+
+Example configuration:
+
+```json
+{
+  "servers": {
+    "python": {
+      "command": "pylsp",
+      "languages": ["python"],
+      "extensions": [".py"]
+    },
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"],
+      "languages": ["typescript", "javascript"],
+      "extensions": [".ts", ".tsx", ".js", ".jsx"]
+    },
+    "rust": {
+      "command": "rust-analyzer",
+      "languages": ["rust"],
+      "rootPatterns": ["Cargo.toml"]
+    }
+  }
+}
+```
+
+Configuration fields:
+
+| Field | Description |
+|-------|-------------|
+| `command` | LSP server command (required) |
+| `args` | Command arguments |
+| `languages` | Language IDs to match |
+| `extensions` | File extensions to match |
+| `extensionToLanguage` | Map extensions to language IDs |
+| `rootPatterns` | Files/dirs that indicate project root |
+| `env` | Environment variables for the server |
+| `initializationOptions` | LSP initialization options |
+| `settings` | LSP workspace settings |
 
 ## Planning & Tracking
 
