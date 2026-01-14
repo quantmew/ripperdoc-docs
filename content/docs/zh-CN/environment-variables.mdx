@@ -3,9 +3,11 @@ title: 环境变量
 description: 环境变量完整列表
 ---
 
-Ripperdoc 可通过环境变量进行配置。
+Ripperdoc 可通过环境变量进行配置。如果你在配置文件里设置了 `api_key`，这里的 API key 环境变量就是可选的。
 
 ## API Keys
+
+如果已在配置文件里设置 `api_key`，可以跳过这些变量。
 
 ### 提供商 API Keys
 
@@ -90,8 +92,8 @@ Ripperdoc 可通过环境变量进行配置。
 
 ```bash
 # API Keys
-ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=YOUR_ANTHROPIC_KEY
+OPENAI_API_KEY=YOUR_OPENAI_KEY
 
 # Timeouts
 RIPPERDOC_API_TIMEOUT=180
@@ -113,7 +115,7 @@ RIPPERDOC_LOG_FILE=/tmp/ripperdoc.log
 ### 从 Shell 加载
 
 ```bash
-export ANTHROPIC_API_KEY="your-key"
+export ANTHROPIC_API_KEY="YOUR_ANTHROPIC_KEY"
 ripperdoc
 ```
 
@@ -122,7 +124,7 @@ ripperdoc
 在项目根目录创建 `.env` 文件：
 
 ```bash
-ANTHROPIC_API_KEY=your-key
+ANTHROPIC_API_KEY=YOUR_ANTHROPIC_KEY
 ```
 
 然后用 `direnv` 或手动 source：
@@ -136,7 +138,7 @@ ripperdoc
 
 ```python
 import os
-os.environ["ANTHROPIC_API_KEY"] = "your-key"
+os.environ["ANTHROPIC_API_KEY"] = "YOUR_ANTHROPIC_KEY"
 
 from ripperdoc.sdk import query
 ```

@@ -25,37 +25,9 @@ uvx tool install ripperdoc
 ### From Source
 
 ```bash
-git clone https://github.com/anthropics/ripperdoc.git
+git clone https://github.com/quantmew/ripperdoc.git
 cd ripperdoc
 pip install -e .
-```
-
-## API Key Setup
-
-Ripperdoc needs an API key for the LLM provider you want to use. Set the appropriate environment variable:
-
-### Anthropic Claude (Default)
-
-```bash
-export ANTHROPIC_API_KEY="your-api-key"
-```
-
-### OpenAI
-
-```bash
-export OPENAI_API_KEY="your-api-key"
-```
-
-### DeepSeek
-
-```bash
-export DEEPSEEK_API_KEY="your-api-key"
-```
-
-### Google Gemini
-
-```bash
-export GEMINI_API_KEY="your-api-key"
 ```
 
 ## Verify Installation
@@ -70,7 +42,7 @@ You should see the version number. Now run:
 ripperdoc
 ```
 
-This will start an interactive session. Type a message to begin chatting with the AI.
+This will start an interactive session. On first launch, Ripperdoc will guide you through setting your LLM endpoint. After that, type a message to begin chatting with the AI.
 
 ## Shell Completion (Optional)
 

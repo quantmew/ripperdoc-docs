@@ -14,7 +14,7 @@ export function baseOptions(lang?: string): BaseLayoutProps {
         </div>
       ),
     },
-    githubUrl: "https://github.com/anthropics/ripperdoc",
+    githubUrl: "https://github.com/quantmew/ripperdoc",
     links: [
       {
         url: docsBaseUrl,
