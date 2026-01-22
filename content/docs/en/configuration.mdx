@@ -226,6 +226,35 @@ For OpenAI-compatible APIs:
 
 See [Permissions](/docs/permissions) for detailed configuration.
 
+## Theme Configuration
+
+Ripperdoc includes a built-in theme system for customizing the CLI appearance. Configure your preferred theme in the global config:
+
+```json
+{
+  "theme": "dark"
+}
+```
+
+### Available Themes
+
+| Theme | Description |
+|-------|-------------|
+| `dark` | Default dark theme with cyan accents |
+| `light` | Light theme for bright terminals |
+| `monokai` | Monokai-inspired color scheme |
+| `dracula` | Dracula color scheme |
+| `solarized_dark` | Solarized dark color scheme |
+| `nord` | Arctic, bluish color scheme |
+
+Switch themes at runtime using the `/themes` command:
+
+```
+> /themes              # Show current theme and list available
+> /themes light        # Switch to light theme
+> /themes preview nord # Preview nord theme colors
+```
+
 ## CLI Options
 
 | Option | Description |

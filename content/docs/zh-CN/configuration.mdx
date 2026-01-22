@@ -226,6 +226,35 @@ Thinking 模式选项：
 
 详细配置参见 [权限](/zh-CN/docs/permissions)。
 
+## 主题配置
+
+Ripperdoc 内置主题系统，用于自定义 CLI 外观。在全局配置中设置首选主题：
+
+```json
+{
+  "theme": "dark"
+}
+```
+
+### 可用主题
+
+| 主题 | 说明 |
+|-------|-------------|
+| `dark` | 默认深色主题，带青色强调色 |
+| `light` | 适用于亮色终端的浅色主题 |
+| `monokai` | Monokai 风格配色方案 |
+| `dracula` | Dracula 配色方案 |
+| `solarized_dark` | Solarized 深色配色方案 |
+| `nord` | 北欧风格，偏蓝配色方案 |
+
+在运行时使用 `/themes` 命令切换主题：
+
+```
+> /themes              # 显示当前主题并列出可用主题
+> /themes light        # 切换到浅色主题
+> /themes preview nord # 预览 nord 主题颜色
+```
+
 ## CLI 参数
 
 | 参数 | 说明 |
