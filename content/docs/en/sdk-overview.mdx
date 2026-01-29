@@ -3,12 +3,12 @@ title: SDK Overview
 description: Using Ripperdoc as a Python library
 ---
 
-Ripperdoc can be used as a Python SDK for building AI-powered applications.
+Ripperdoc provides a Python SDK for building AI-powered applications with programmatic control over conversations, tools, and permissions.
 
 ## Installation
 
 ```bash
-pip install ripperdoc
+pip install ripperdoc-agent-sdk
 ```
 
 ## Quick Start
@@ -19,17 +19,22 @@ For simple, single-turn queries:
 
 ```python
 import asyncio
-from ripperdoc.sdk import query, RipperdocOptions
+from ripperdoc_agent_sdk import query, RipperdocAgentOptions
 
 async def main():
-    options = RipperdocOptions(
+    options = RipperdocAgentOptions(
         model="main",
-        yolo_mode=True
+        permission_mode="default"
     )
 
-    async for message in query("Explain what this function does", options):
-        if hasattr(message, 'content'):
-            print(message.content)
+    async for message in query(
+        prompt="Explain what this function does",
+        options=options
+    ):
+        if message.type == "assistant":
+            for block in message.content:
+                if block.type == "text":
+                    print(block.text)
 
 asyncio.run(main())
 ```
@@ -40,77 +45,121 @@ For multi-turn conversations with full control:
 
 ```python
 import asyncio
-from ripperdoc.sdk import RipperdocClient, RipperdocOptions
+from ripperdoc_agent_sdk import RipperdocSDKClient, RipperdocAgentOptions
 
 async def main():
-    options = RipperdocOptions(
+    options = RipperdocAgentOptions(
         model="main",
-        yolo_mode=True,
+        permission_mode="acceptEdits",
         verbose=True
     )
 
-    async with RipperdocClient(options=options) as client:
+    async with RipperdocSDKClient(options=options) as client:
         # Start a conversation
         await client.query("What files are in this project?")
         async for message in client.receive_messages():
-            if hasattr(message, 'content'):
-                print(message.content)
+            if message.type == "assistant":
+                for block in message.content:
+                    if block.type == "text":
+                        print(block.text)
 
         # Continue the conversation
         await client.query("Read the main.py file")
         async for message in client.receive_messages():
-            if hasattr(message, 'content'):
-                print(message.content)
+            if message.type == "assistant":
+                for block in message.content:
+                    if block.type == "text":
+                        print(block.text)
 
 asyncio.run(main())
 ```
 
-## RipperdocOptions
+## RipperdocAgentOptions
 
-The `RipperdocOptions` dataclass configures SDK behavior:
+The `RipperdocAgentOptions` class configures SDK behavior:
 
 ```python
-from ripperdoc.sdk import RipperdocOptions
+from ripperdoc_agent_sdk import RipperdocAgentOptions
 
-options = RipperdocOptions(
+options = RipperdocAgentOptions(
+    # Model configuration
+    model="main",                   # Model profile name
+    max_thinking_tokens=0,          # Extended thinking tokens (0 = disabled)
+
+    # Permission mode (replaces yolo_mode)
+    permission_mode="default",      # "default" | "acceptEdits" | "bypassPermissions" | "plan"
+
     # Tool configuration
-    tools=None,                    # Custom tools list (None = defaults)
     allowed_tools=["Read", "Glob"],  # Whitelist specific tools
-    disallowed_tools=["Bash"],     # Blacklist specific tools
+    disallowed_tools=["Bash"],       # Blacklist specific tools
 
-    # Execution mode
-    yolo_mode=False,               # Skip permission prompts
-    verbose=False,                 # Enable verbose output
-
-    # Model settings
-    model="main",                  # Model profile name
-    max_thinking_tokens=0,         # Extended thinking tokens
+    # Behavior settings
+    verbose=False,                  # Enable verbose output
+    max_turns=None,                 # Max conversation turns (None = unlimited)
+    query_timeout=300.0,            # Query timeout in seconds (default: 300)
 
     # Context
-    context={},                    # Custom context variables
-    system_prompt=None,            # Override system prompt
-    additional_instructions=None,  # Additional instructions
+    cwd=None,                       # Working directory path
+    context={},                     # Custom context variables
+    system_prompt=None,             # Override system prompt
+    additional_instructions=None,   # Additional instructions
 
-    # Permissions
-    permission_checker=None,       # Custom permission checker
+    # Session management
+    resume=None,                    # Session ID to resume from
+    continue_conversation=False,    # Continue most recent conversation
+    fork_session=False,             # Create new branch when resuming
 
-    # Working directory
-    cwd=None                       # Working directory path
+    # Custom permissions
+    permission_checker=None,        # Custom permission checker function
+
+    # MCP servers
+    mcp_servers=None,               # MCP server configurations
+
+    # Programmatic agents
+    agents=None,                    # Custom subagent definitions
+
+    # Programmatic hooks
+    hooks=None,                     # Event hook callbacks
 )
+```
+
+### Permission Modes
+
+The SDK supports four permission modes:
+
+| Mode | Description |
+|------|-------------|
+| `default` | Prompts for dangerous operations (bash, file edits, etc.) |
+| `acceptEdits` | Auto-accept file edits, prompt for other dangerous operations |
+| `bypassPermissions` | Allow all operations without prompting |
+| `plan` | Planning mode - no execution, analysis only |
+
+```python
+# Safe mode with prompts
+options = RipperdocAgentOptions(permission_mode="default")
+
+# Auto-accept file edits
+options = RipperdocAgentOptions(permission_mode="acceptEdits")
+
+# Planning mode - no execution
+options = RipperdocAgentOptions(permission_mode="plan")
+
+# Fully automated (use with caution)
+options = RipperdocAgentOptions(permission_mode="bypassPermissions")
 ```
 
 ### Tool Filtering
 
-Filter available tools:
+Control which tools are available:
 
 ```python
 # Only allow read operations
-options = RipperdocOptions(
+options = RipperdocAgentOptions(
     allowed_tools=["Read", "Glob", "Grep", "LS"]
 )
 
 # Allow all except bash
-options = RipperdocOptions(
+options = RipperdocAgentOptions(
     disallowed_tools=["Bash"]
 )
 ```
@@ -120,78 +169,227 @@ options = RipperdocOptions(
 Implement custom permission logic:
 
 ```python
-from ripperdoc.sdk import RipperdocOptions
-from ripperdoc.core.permissions import PermissionResult
+from ripperdoc_agent_sdk import RipperdocAgentOptions, PermissionResultAllow, PermissionResultDeny
 
-async def my_permission_checker(tool, input_data):
-    tool_name = getattr(tool, 'name', tool.__class__.__name__)
-
+async def my_permission_checker(tool_name, tool_input, context):
     # Auto-approve read operations
     if tool_name in ['Read', 'Glob', 'Grep']:
-        return PermissionResult(allowed=True)
+        return PermissionResultAllow()
 
     # Deny dangerous commands
     if tool_name == 'Bash':
-        command = input_data.get('command', '')
+        command = tool_input.get('command', '')
         if 'rm -rf' in command:
-            return PermissionResult(
-                allowed=False,
-                reason="Dangerous command blocked"
-            )
+            return PermissionResultDeny(message="Dangerous command blocked")
 
     # Ask for others
-    return PermissionResult(allowed=True)
+    return PermissionResultAllow()
 
-options = RipperdocOptions(
+options = RipperdocAgentOptions(
     permission_checker=my_permission_checker
 )
 ```
 
 ## Message Types
 
-The SDK yields different message types:
+The SDK yields different message types with structured content:
 
 ```python
-from ripperdoc.utils.messages import (
+from ripperdoc_agent_sdk import (
     UserMessage,
     AssistantMessage,
-    ProgressMessage
+    SystemMessage,
+    ResultMessage,
+    TextBlock,
+    ToolUseBlock,
+    ThinkingBlock
 )
 
 async for message in client.receive_messages():
     if isinstance(message, AssistantMessage):
-        print(f"Assistant: {message.content}")
-    elif isinstance(message, ProgressMessage):
-        print(f"Progress: {message.status}")
+        for block in message.content:
+            if isinstance(block, TextBlock):
+                print(f"Text: {block.text}")
+            elif isinstance(block, ThinkingBlock):
+                print(f"Thinking: {block.thinking}")
+            elif isinstance(block, ToolUseBlock):
+                print(f"Tool: {block.name}")
+
+    elif isinstance(message, ResultMessage):
+        print(f"Usage: {message.result.usage}")
 ```
 
-### ProgressMessage
+### Content Blocks
 
-Progress messages indicate ongoing operations:
+Messages contain content blocks of different types:
+
+- **TextBlock**: Plain text response
+- **ThinkingBlock**: Extended thinking output (for models with thinking enabled)
+- **ToolUseBlock**: Tool being called with parameters
+- **ToolResultBlock**: Result from a tool execution
+
+## MCP Servers
+
+Integrate external MCP servers for additional tools:
 
 ```python
-async for message in client.receive_messages():
-    if hasattr(message, 'type') and message.type == 'progress':
-        print(f"Status: {message.status}")
-        if hasattr(message, 'tool_name'):
-            print(f"Running tool: {message.tool_name}")
+from ripperdoc_agent_sdk import RipperdocAgentOptions, McpServerConfig
+
+options = RipperdocAgentOptions(
+    mcp_servers={
+        "filesystem": McpServerConfig(
+            type="stdio",
+            command="npx",
+            args=["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"]
+        ),
+        "postgres": McpServerConfig(
+            type="stdio",
+            command="npx",
+            args=["-y", "@modelcontextprotocol/server-postgres"],
+            env={"POSTGRES_CONNECTION_STRING": "postgresql://..."}
+        )
+    }
+)
 ```
 
-## Thinking Mode
+## SDK MCP Server (In-Process Tools)
 
-For models that support extended thinking:
+Define custom tools that run in-process within your Python application:
 
 ```python
-options = RipperdocOptions(
-    model="reasoner",  # Use a model profile with thinking enabled
-    max_thinking_tokens=8192
+from ripperdoc_agent_sdk import (
+    RipperdocAgentOptions,
+    query,
+    tool,
+    create_sdk_mcp_server
 )
 
-async for message in query("Solve this complex problem", options):
-    if hasattr(message, 'thinking'):
-        print(f"Thinking: {message.thinking}")
-    if hasattr(message, 'content'):
-        print(f"Response: {message.content}")
+@tool("add", "Add two numbers", {"a": float, "b": float})
+async def add(args):
+    result = args["a"] + args["b"]
+    return {"content": [{"type": "text", "text": f"Sum: {result}"}]}
+
+@tool("multiply", "Multiply two numbers", {"a": float, "b": float})
+async def multiply(args):
+    result = args["a"] * args["b"]
+    return {"content": [{"type": "text", "text": f"Product: {result}"}]}
+
+# Create SDK MCP server
+calculator_server = create_sdk_mcp_server(
+    name="calculator",
+    version="1.0.0",
+    tools=[add, multiply]
+)
+
+# Use with Ripperdoc
+options = RipperdocAgentOptions(
+    mcp_servers={"calculator": calculator_server},
+    allowed_tools=["add", "multiply"]
+)
+
+async for message in query(
+    prompt="What is 25 * 17 + 10?",
+    options=options
+):
+    if message.type == "assistant":
+        for block in message.content:
+            if block.type == "text":
+                print(block.text)
+```
+
+## Programmatic Agents
+
+Define custom subagents programmatically:
+
+```python
+from ripperdoc_agent_sdk import RipperdocAgentOptions, AgentConfig
+
+options = RipperdocAgentOptions(
+    agents={
+        "code-reviewer": AgentConfig(
+            description="Review code for security issues and best practices",
+            prompt="You are a security expert. Focus on identifying vulnerabilities, "
+                   "injection attacks, and adherence to security best practices.",
+            tools=["Read", "Grep", "Glob"],
+            model="sonnet"
+        ),
+        "test-writer": AgentConfig(
+            description="Write comprehensive tests for code",
+            prompt="You are a testing specialist. Write thorough unit tests "
+                   "with good coverage and edge cases.",
+            tools=["Read", "Write", "Glob", "Grep"],
+            model="haiku"
+        )
+    }
+)
+```
+
+## Hooks
+
+Intercept and modify events during execution:
+
+```python
+from ripperdoc_agent_sdk import RipperdocAgentOptions, HookMatcher
+
+async def log_tool_use(event, input_data):
+    print(f"Tool used: {input_data.get('tool_name')}")
+    return {}
+
+async def sanitize_input(event, input_data):
+    # Modify tool input before execution
+    return {"updated_input": sanitize(input_data)}
+
+options = RipperdocAgentOptions(
+    hooks={
+        "PreToolUse": [
+            HookMatcher(callback=log_tool_use, tool_pattern="*"),
+            HookMatcher(callback=sanitize_input, tool_pattern="Bash*")
+        ]
+    }
+)
+```
+
+### Hook Events
+
+Available hook events:
+
+- `PreToolUse` - Before a tool is called
+- `PostToolUse` - After a tool completes
+- `UserPromptSubmit` - When user submits a prompt
+- `Stop` - When a stop is requested
+- `SubagentStop` - When a subagent stops
+- `PreCompact` - Before conversation compaction
+
+## Session Management
+
+Control conversation lifecycle:
+
+```python
+from ripperdoc_agent_sdk import RipperdocSDKClient, RipperdocAgentOptions
+
+options = RipperdocAgentOptions(
+    max_turns=10,  # Limit conversation to 10 turns
+)
+
+# Resume from existing session
+options = RipperdocAgentOptions(
+    resume="session-id-here"
+)
+
+# Continue most recent conversation
+options = RipperdocAgentOptions(
+    continue_conversation=True
+)
+
+# Fork a new branch when resuming
+options = RipperdocAgentOptions(
+    resume="session-id-here",
+    fork_session=True
+)
+
+async with RipperdocSDKClient(options=options) as client:
+    print(f"Session ID: {client.session_id}")
+    print(f"Turn count: {client.turn_count}")
 ```
 
 ## Use Cases
@@ -199,34 +397,38 @@ async for message in query("Solve this complex problem", options):
 ### Code Analysis
 
 ```python
-from ripperdoc.sdk import query, RipperdocOptions
+from ripperdoc_agent_sdk import query, RipperdocAgentOptions
 
 async def analyze_code(code: str):
-    options = RipperdocOptions(
+    options = RipperdocAgentOptions(
         system_prompt="You are a security expert.",
-        allowed_tools=["Read"]
+        allowed_tools=["Read"],
+        permission_mode="default"
     )
 
     async for message in query(
-        f"Analyze this code for security issues:\n\n```python\n{code}\n```",
-        options
+        prompt=f"Analyze this code for security issues:\n\n```python\n{code}\n```",
+        options=options
     ):
-        if hasattr(message, 'content'):
-            return message.content
+        if message.type == "assistant":
+            for block in message.content:
+                if block.type == "text":
+                    return block.text
 ```
 
 ### Automated Refactoring
 
 ```python
-from ripperdoc.sdk import RipperdocClient, RipperdocOptions
+from ripperdoc_agent_sdk import RipperdocSDKClient, RipperdocAgentOptions
 
 async def refactor_codebase():
-    options = RipperdocOptions(
-        yolo_mode=True,
-        allowed_tools=["Read", "Glob", "Grep", "Edit"]
+    options = RipperdocAgentOptions(
+        permission_mode="acceptEdits",
+        allowed_tools=["Read", "Glob", "Grep", "Edit"],
+        max_turns=20
     )
 
-    async with RipperdocClient(options=options) as client:
+    async with RipperdocSDKClient(options=options) as client:
         await client.query("Find all deprecated API calls")
         async for msg in client.receive_messages():
             pass  # Process results
@@ -239,33 +441,47 @@ async def refactor_codebase():
 ### Documentation Generation
 
 ```python
-from ripperdoc.sdk import query, RipperdocOptions
+from ripperdoc_agent_sdk import query, RipperdocAgentOptions
 
 async def generate_docs():
-    options = RipperdocOptions(
-        allowed_tools=["Read", "Glob", "Grep"]
+    options = RipperdocAgentOptions(
+        allowed_tools=["Read", "Glob", "Grep"],
+        agents={
+            "doc-writer": AgentConfig(
+                description="Generate API documentation",
+                prompt="You are a technical writer. Generate clear, concise documentation.",
+            )
+        }
     )
 
     async for message in query(
-        "Generate API documentation for all public functions in src/api/",
-        options
+        prompt="Generate API documentation for all public functions in src/api/",
+        options=options
     ):
-        if hasattr(message, 'content'):
-            print(message.content)
+        if message.type == "assistant":
+            for block in message.content:
+                if block.type == "text":
+                    print(block.text)
 ```
 
 ## SDK Features
 
 - **Async/await support**: Native async Python API
+- **Type safety**: Full type hints and Pydantic models
 - **Tool access**: Use any Ripperdoc tool
 - **Session management**: Maintain conversation context
-- **Token tracking**: Monitor usage and costs
-- **Custom prompts**: Full control over system prompts
-- **Permission control**: Custom permission logic
+- **Permission control**: Four permission modes with custom checkers
 - **Streaming**: Real-time message streaming
 - **Thinking mode**: Extended reasoning support
+- **MCP integration**: Connect external MCP servers
+- **SDK MCP servers**: Define in-process tools
+- **Programmatic agents**: Dynamic agent definitions
+- **Hooks**: Intercept and modify execution
+- **Subprocess architecture**: Clean separation via JSON Control Protocol
 
 ## Next Steps
 
 - [SDK Client Reference](/docs/sdk-client) - Detailed API reference
-- [Examples](https://github.com/quantmew/ripperdoc/tree/main/examples) - Example scripts
+- [TypeScript SDK](/docs/sdk-typescript) - TypeScript/JavaScript SDK
+- [MCP Integration](/docs/mcp) - Model Context Protocol
+- [Hooks](/docs/hooks) - Event hooks and customization

@@ -1,201 +1,725 @@
 ---
 title: SDK 客户端参考
-description: Ripperdoc SDK 的详细 API 参考
+description: Ripperdoc Python SDK 的详细 API 参考
 ---
 
-## RipperdocClient
+## RipperdocSDKClient
 
-会话式交互的主类。
+用于与 Ripperdoc CLI 进行会话式交互的主类。
 
 ### 构造函数
 
 ```python
-from ripperdoc.sdk import RipperdocClient
+from ripperdoc_agent_sdk import RipperdocSDKClient, RipperdocAgentOptions
 
-client = RipperdocClient(
-    model: str = "main",
-    yolo_mode: bool = False,
-    max_thinking_tokens: int = 0,
-    tools: Optional[List[str]] = None,
-    system_prompt: Optional[str] = None,
-)
+options = RipperdocAgentOptions(model="main")
+client = RipperdocSDKClient(options=options)
 ```
 
 #### 参数
 
-| 参数 | 类型 | 默认值 | 说明 |
-|-----------|------|---------|-------------|
-| `model` | `str` | `"main"` | 使用的模型配置 |
-| `yolo_mode` | `bool` | `False` | 跳过权限提示 |
-| `max_thinking_tokens` | `int` | `0` | Thinking 模式最大 token 数 |
-| `tools` | `List[str]` | `None` | 启用的工具（为空则全部启用） |
-| `system_prompt` | `str` | `None` | 自定义 system prompt |
+客户端接受一个 `RipperdocAgentOptions` 对象进行配置。参见 [RipperdocAgentOptions](#ripperdocagentoptions) 了解所有可用选项。
 
 ### 方法
 
-#### query
+#### connect
 
-发送消息并获取回复。
+连接到 Ripperdoc CLI 子进程并初始化会话。
 
 ```python
-async def query(
-    self,
-    message: str,
-    stream: bool = False,
-) -> QueryResult
+async def connect(prompt: Optional[str] = None) -> None
 ```
 
 **参数：**
-- `message`：用户消息
-- `stream`：开启流式响应
+- `prompt`: 连接后可选发送的提示
 
-**返回：** `QueryResult` 对象
+**示例：**
+```python
+await client.connect()
+# 或
+await client.connect(prompt="你好，Ripperdoc！")
+```
 
-#### close
+#### disconnect
 
-清理资源。
+关闭子进程连接并清理资源。
 
 ```python
-async def close(self) -> None
+async def disconnect() -> None
+```
+
+**示例：**
+```python
+try:
+    await client.connect()
+    # ... 执行工作 ...
+finally:
+    await client.disconnect()
+```
+
+#### query
+
+发送提示并开始流式响应。
+
+```python
+async def query(prompt: str, session_id: str = "default") -> None
+```
+
+**参数：**
+- `prompt`: 要发送的提示
+- `session_id`: 对话的会话标识符（默认: "default"）
+
+**抛出：**
+- `RuntimeError`: 如果已有查询正在进行
+
+**示例：**
+```python
+await client.query("这个项目里有哪些文件？")
+```
+
+#### receive_messages
+
+为活动查询产生消息。
+
+```python
+async def receive_messages() -> AsyncIterator[Message]
+```
+
+**产生：**
+- `Message`: 来自对话的消息
+
+**消息类型：**
+- `UserMessage`: 带内容块的用户消息
+- `AssistantMessage`: 带内容块的助手响应
+- `SystemMessage`: 系统信息（初始化、错误等）
+- `ResultMessage`: 带使用信息的最终结果
+
+**示例：**
+```python
+async for message in client.receive_messages():
+    if message.type == "assistant":
+        for block in message.content:
+            if block.type == "text":
+                print(block.text)
+    elif message.type == "result":
+        print(f"完成！用量: {message.result.usage}")
+```
+
+#### receive_response
+
+产生消息直到并包括 ResultMessage。
+
+```python
+async def receive_response() -> AsyncIterator[Message]
+```
+
+这是 `receive_messages()` 的便捷包装器，在 ResultMessage 后自动终止。
+
+**示例：**
+```python
+async for message in client.receive_response():
+    print(message)
+# 在 ResultMessage 后自动停止
+```
+
+#### interrupt
+
+请求取消活动查询。
+
+```python
+async def interrupt() -> None
+```
+
+**示例：**
+```python
+task = asyncio.create_task(client.query("长任务..."))
+# ... 稍后 ...
+await client.interrupt()
+```
+
+#### set_permission_mode
+
+在对话期间更改权限模式。
+
+```python
+async def set_permission_mode(mode: PermissionMode) -> None
+```
+
+**参数：**
+- `mode`: 权限模式 (`"default"`, `"acceptEdits"`, `"bypassPermissions"`, `"plan"`)
+
+**抛出：**
+- `ValueError`: 如果模式无效
+
+**示例：**
+```python
+await client.set_permission_mode("acceptEdits")
+```
+
+#### set_model
+
+在对话期间更改 AI 模型。
+
+```python
+async def set_model(model: Optional[str]) -> None
+```
+
+**参数：**
+- `model`: 要使用的模型，或 None 使用默认值
+
+**示例：**
+```python
+await client.set_model("sonnet")
+```
+
+#### get_server_info
+
+获取服务器初始化信息。
+
+```python
+async def get_server_info() -> Optional[Dict[str, Any]]
+```
+
+**返回：**
+- 包含服务器信息的字典，如果未连接则返回 None
+
+**示例：**
+```python
+info = await client.get_server_info()
+if info:
+    print(f"会话: {info['session_id']}")
+    print(f"模型: {info['model']}")
+```
+
+### 属性
+
+#### session_id
+
+当前会话 ID。
+
+```python
+session_id: Optional[str]
+```
+
+#### turn_count
+
+当前会话中的轮次数。
+
+```python
+turn_count: int
+```
+
+#### user
+
+此会话的用户标识符。
+
+```python
+user: Optional[str]
+```
+
+#### history
+
+对话历史。
+
+```python
+history: List[Any]
 ```
 
 ### 上下文管理器
 
-作为 async 上下文管理器使用：
+用作异步上下文管理器以实现自动清理：
 
 ```python
-async with RipperdocClient() as client:
-    result = await client.query("Hello")
+async with RipperdocSDKClient(options=options) as client:
+    await client.query("你好！")
+    async for message in client.receive_messages():
+        print(message)
+# 自动断开连接
 ```
 
 ## query 函数
 
-用于一次性查询，无需会话管理。
+用于无需会话管理的一次性查询。
 
 ```python
-from ripperdoc.sdk import query
-
 async def query(
-    message: str,
-    system_prompt: str = "",
-    model: str = "main",
-    tools: Optional[List[str]] = None,
-    max_thinking_tokens: int = 0,
-) -> QueryResult
+    *,
+    prompt: Union[str, AsyncIterable[dict[str, Any]]],
+    options: Optional[RipperdocAgentOptions] = None,
+) -> AsyncIterator[Message]
 ```
 
-### 参数
+**参数：**
+- `prompt`: 提示（字符串）或异步内容块可迭代对象
+- `options`: 可选配置（如果 None 则默认为 `RipperdocAgentOptions()`）
 
-| 参数 | 类型 | 默认值 | 说明 |
-|-----------|------|---------|-------------|
-| `message` | `str` | 必填 | 查询消息 |
-| `system_prompt` | `str` | `""` | System prompt |
-| `model` | `str` | `"main"` | 模型配置 |
-| `tools` | `List[str]` | `None` | 启用工具 |
-| `max_thinking_tokens` | `int` | `0` | Thinking 模式 token 数 |
+**产生：**
+- `Message`: 来自对话的消息
 
-## QueryResult
+**示例：**
+```python
+from ripperdoc_agent_sdk import query, RipperdocAgentOptions
 
-查询返回的结果对象。
+options = RipperdocAgentOptions(model="main")
 
-### 属性
+async for message in query(
+    prompt="法国的首都是哪里？",
+    options=options
+):
+    if message.type == "assistant":
+        for block in message.content:
+            if block.type == "text":
+                print(block.text)
+```
 
-| 属性 | 类型 | 说明 |
-|----------|------|-------------|
-| `content` | `str` | 回复文本 |
-| `tool_calls` | `List[ToolCall]` | 调用过的工具 |
-| `input_tokens` | `int` | 输入 token 数 |
-| `output_tokens` | `int` | 输出 token 数 |
-| `cost_usd` | `float` | 预估费用 |
-| `duration_ms` | `float` | 响应耗时 |
+## RipperdocAgentOptions
+
+SDK 行为的配置。
+
+### 构造函数
+
+```python
+options = RipperdocAgentOptions(
+    # 模型配置
+    model: str = "main",
+    max_thinking_tokens: int = 0,
+
+    # 权限模式
+    permission_mode: PermissionMode = "default",
+
+    # 工具配置
+    allowed_tools: Optional[Sequence[str]] = None,
+    disallowed_tools: Optional[Sequence[str]] = None,
+
+    # 行为设置
+    verbose: bool = False,
+    max_turns: Optional[int] = None,
+    query_timeout: float = 300.0,
+
+    # 上下文
+    cwd: Optional[Union[str, Path]] = None,
+    context: Dict[str, str] = {},
+    system_prompt: Optional[str] = None,
+    additional_instructions: Optional[Union[str, Sequence[str]]] = None,
+
+    # 会话管理
+    resume: Optional[str] = None,
+    continue_conversation: bool = False,
+    fork_session: bool = False,
+
+    # 自定义权限
+    permission_checker: Optional[Callable] = None,
+
+    # MCP 服务器
+    mcp_servers: Optional[Dict[str, McpServerConfig]] = None,
+
+    # 程序化代理
+    agents: Optional[Dict[str, AgentConfig]] = None,
+
+    # 程序化钩子
+    hooks: Optional[Dict[str, List[HookMatcher]]] = None,
+
+    # 环境
+    env: Optional[Dict[str, str]] = None,
+    additional_directories: Optional[List[str]] = None,
+
+    # 其他
+    cli_path: Optional[str] = None,
+    stderr: Optional[StderrCallback] = None,
+    include_partial_messages: bool = False,
+)
+```
+
+### 选项参考
+
+| 选项 | 类型 | 默认值 | 说明 |
+|--------|------|---------|-------------|
+| `model` | `str` | `"main"` | 要使用的模型配置 |
+| `max_thinking_tokens` | `int` | `0` | Thinking 模式最大 token 数（0 = 禁用） |
+| `permission_mode` | `str` | `"default"` | 权限模式 |
+| `allowed_tools` | `List[str]` | `None` | 工具白名单 |
+| `disallowed_tools` | `List[str]` | `None` | 工具黑名单 |
+| `verbose` | `bool` | `False` | 启用详细输出 |
+| `max_turns` | `int` | `None` | 最大对话轮次（None = 无限制） |
+| `query_timeout` | `float` | `300.0` | 查询超时时间（秒） |
+| `cwd` | `str/Path` | `None` | 工作目录 |
+| `context` | `Dict[str, str]` | `{}` | 自定义上下文变量 |
+| `system_prompt` | `str` | `None` | 覆盖系统提示词 |
+| `additional_instructions` | `str/List[str]` | `None` | 附加指令 |
+| `resume` | `str` | `None` | 要恢复的会话 ID |
+| `continue_conversation` | `bool` | `False` | 继续最近的对话 |
+| `fork_session` | `bool` | `False` | 恢复时创建分支 |
+| `permission_checker` | `Callable` | `None` | 自定义权限检查器 |
+| `mcp_servers` | `Dict[str, McpServerConfig]` | `None` | MCP 服务器配置 |
+| `agents` | `Dict[str, AgentConfig]` | `None` | 程序化代理 |
+| `hooks` | `Dict[str, List[HookMatcher]]` | `None` | 程序化钩子 |
+| `env` | `Dict[str, str]` | `None` | 环境变量 |
+| `cli_path` | `str` | `None` | CLI 可执行文件路径 |
+
+## McpServerConfig
+
+MCP 服务器的配置。
+
+### 构造函数
+
+```python
+from ripperdoc_agent_sdk import McpServerConfig
+
+config = McpServerConfig(
+    type: str = "stdio",           # "stdio", "sse", 或 "http"
+    command: Optional[str] = None,  # stdio 服务器的命令
+    args: Optional[List[str]] = None,  # stdio 服务器的参数
+    url: Optional[str] = None,      # SSE/HTTP 服务器的 URL
+    env: Optional[Dict[str, str]] = None,  # 环境变量
+    headers: Optional[Dict[str, str]] = None,  # SSE/HTTP 的请求头
+    description: Optional[str] = None,  # 服务器描述
+    instructions: Optional[str] = None,  # 服务器指令
+)
+```
+
+## AgentConfig
+
+子代理的程序化配置。
+
+### 构造函数
+
+```python
+from ripperdoc_agent_sdk import AgentConfig
+
+agent = AgentConfig(
+    description: str,               # 何时使用此代理的描述
+    prompt: str,                    # 代理的系统提示词
+    tools: Optional[List[str]] = None,  # 可用工具（["*"] 表示全部）
+    model: Optional[str] = None,    # 模型: "sonnet", "opus", "haiku"，或 None 继承
+    color: Optional[str] = None,    # 显示颜色
+    fork_context: bool = False,     # 是否分叉上下文
+)
+```
+
+## HookMatcher
+
+程序化钩子的匹配器配置。
+
+### 构造函数
+
+```python
+from ripperdoc_agent_sdk import HookMatcher
+
+matcher = HookMatcher(
+    callback: HookCallback,         # 回调函数
+    tool_pattern: Optional[str] = None,  # 工具名称模式
+)
+```
+
+### 钩子回调签名
+
+```python
+async def hook_callback(event: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    # 返回修改后的输入或其他钩子响应
+    return {}
+```
+
+## 权限类型
+
+### PermissionMode
+
+```python
+from ripperdoc_agent_sdk import PermissionMode
+
+# 有效模式：
+PermissionMode.DEFAULT              # "default" - 对危险工具提示
+PermissionMode.ACCEPT_EDITS         # "acceptEdits" - 自动接受文件编辑
+PermissionMode.BYPASS_PERMISSIONS   # "bypassPermissions" - 允许所有
+PermissionMode.PLAN                 # "plan" - 规划模式，不执行
+```
+
+### PermissionResultAllow
+
+```python
+from ripperdoc_agent_sdk import PermissionResultAllow
+
+# 允许并可选择更新输入
+return PermissionResultAllow(updated_input={...})
+```
+
+### PermissionResultDeny
+
+```python
+from ripperdoc_agent_sdk import PermissionResultDeny
+
+# 拒绝并可选择消息和中断
+return PermissionResultDeny(message="原因", interrupt=True)
+```
+
+## 消息类型
+
+### Message
+
+所有消息的基类型。联合类型：
+- `UserMessage`
+- `AssistantMessage`
+- `SystemMessage`
+- `ResultMessage`
+- `StreamEvent`
+
+### UserMessage
+
+```python
+class UserMessage:
+    type: Literal["user"]
+    content: List[ContentBlock]
+    role: Literal["user"]
+```
+
+### AssistantMessage
+
+```python
+class AssistantMessage:
+    type: Literal["assistant"]
+    content: List[ContentBlock]
+    role: Literal["assistant"]
+```
+
+### SystemMessage
+
+```python
+class SystemMessage:
+    type: Literal["system"]
+    subtype: str                    # "init", "error" 等
+    data: Dict[str, Any]
+    role: Literal["system"]
+```
+
+### ResultMessage
+
+```python
+class ResultMessage:
+    type: Literal["result"]
+    result: ResultData
+
+class ResultData:
+    status: Literal["success", "error"]
+    usage: Optional[UsageInfo]
+    error: Optional[str]
+
+class UsageInfo:
+    input_tokens: int
+    output_tokens: int
+    cache_creation_tokens: Optional[int]
+    cache_read_tokens: Optional[int]
+    cost_usd: Optional[float]
+    duration_ms: Optional[float]
+```
+
+### ContentBlock
+
+联合类型：
+- `TextBlock`
+- `ThinkingBlock`
+- `ToolUseBlock`
+- `ToolResultBlock`
+
+### TextBlock
+
+```python
+class TextBlock:
+    type: Literal["text"]
+    text: str
+```
+
+### ThinkingBlock
+
+```python
+class ThinkingBlock:
+    type: Literal["thinking"]
+    thinking: str
+```
+
+### ToolUseBlock
+
+```python
+class ToolUseBlock:
+    type: Literal["tool_use"]
+    id: str
+    name: str
+    input: Dict[str, Any]
+```
+
+### ToolResultBlock
+
+```python
+class ToolResultBlock:
+    type: Literal["tool_result"]
+    tool_use_id: str
+    content: Union[str, List[ContentBlock]]
+    is_error: Optional[bool]
+```
+
+## 错误类型
+
+### SDKError
+
+所有 SDK 错误的基类。
+
+### CLIConnectionError
+
+连接到 CLI 失败时抛出。
+
+### CLINotFoundError
+
+找不到 CLI 可执行文件时抛出。
+
+### ProcessError
+
+子进程遇到错误时抛出。
+
+### CLIJSONDecodeError
+
+无法解码来自 CLI 的 JSON 响应时抛出。
+
+### MessageParseError
+
+无法解析消息时抛出。
 
 ## 示例
 
 ### 基础查询
 
 ```python
-from ripperdoc.sdk import query
+from ripperdoc_agent_sdk import query
 
-result = await query("What is 2 + 2?")
-print(result.content)  # "4"
+async for message in query(prompt="2 + 2 等于几？"):
+    if message.type == "assistant":
+        for block in message.content:
+            if block.type == "text":
+                print(block.text)  # "4"
 ```
 
-### 使用工具
+### 带选项
 
 ```python
-from ripperdoc.sdk import RipperdocClient
+from ripperdoc_agent_sdk import RipperdocSDKClient, RipperdocAgentOptions
 
-client = RipperdocClient(
-    tools=["Read", "Glob"],
-    yolo_mode=True
+options = RipperdocAgentOptions(
+    model="sonnet",
+    permission_mode="acceptEdits",
+    allowed_tools=["Read", "Glob", "Edit"]
 )
 
-result = await client.query("List all Python files")
-print(result.content)
+async with RipperdocSDKClient(options=options) as client:
+    await client.query("列出所有 Python 文件")
+    async for message in client.receive_messages():
+        if message.type == "assistant":
+            for block in message.content:
+                if block.type == "text":
+                    print(block.text)
 ```
 
-### Thinking 模式
+### 自定义权限检查器
 
 ```python
-from ripperdoc.sdk import query
+from ripperdoc_agent_sdk import (
+    RipperdocAgentOptions,
+    PermissionResultAllow,
+    PermissionResultDeny
+)
 
-result = await query(
-    "Solve this complex problem step by step...",
-    max_thinking_tokens=8000,
-    model="reasoning"
+async def my_checker(tool_name, tool_input, context):
+    if tool_name == "Bash" and "rm" in tool_input.get("command", ""):
+        return PermissionResultDeny(message="不允许删除操作！")
+    return PermissionResultAllow()
+
+options = RipperdocAgentOptions(
+    permission_checker=my_checker
 )
 ```
 
-### 流式输出
+### 使用 MCP 服务器
 
 ```python
-from ripperdoc.sdk import RipperdocClient
+from ripperdoc_agent_sdk import RipperdocAgentOptions, McpServerConfig
 
-client = RipperdocClient()
+options = RipperdocAgentOptions(
+    mcp_servers={
+        "filesystem": McpServerConfig(
+            type="stdio",
+            command="npx",
+            args=["-y", "@modelcontextprotocol/server-filesystem", "/path"]
+        )
+    }
+)
+```
 
-async for chunk in client.query("Write a long story", stream=True):
-    print(chunk, end="", flush=True)
+### SDK MCP 服务器（进程内工具）
+
+```python
+from ripperdoc_agent_sdk import tool, create_sdk_mcp_server, query
+
+@tool("calculate", "执行计算", {"expression": str})
+async def calculate(args):
+    try:
+        result = eval(args["expression"])
+        return {"content": [{"type": "text", "text": str(result)}]}
+    except Exception as e:
+        return {"content": [{"type": "text", "text": f"错误: {e}"}], "is_error": True}
+
+server = create_sdk_mcp_server(name="calc", tools=[calculate])
+
+async for message in query(
+    prompt="123 * 456 等于多少？",
+    options=RipperdocAgentOptions(mcp_servers={"calc": server})
+):
+    if message.type == "assistant":
+        for block in message.content:
+            if block.type == "text":
+                print(block.text)
 ```
 
 ### 错误处理
 
 ```python
-from ripperdoc.sdk import RipperdocClient, RipperdocError
-
-try:
-    client = RipperdocClient()
-    result = await client.query("Do something")
-except RipperdocError as e:
-    print(f"Error: {e}")
-finally:
-    await client.close()
-```
-
-## 工具访问控制
-
-控制可用工具：
-
-```python
-# Only file reading tools
-client = RipperdocClient(tools=["Read", "Glob", "Grep"])
-
-# All tools except shell
-all_tools = get_all_tool_names()
-safe_tools = [t for t in all_tools if t != "Bash"]
-client = RipperdocClient(tools=safe_tools)
-```
-
-## 自定义 system prompt
-
-```python
-client = RipperdocClient(
-    system_prompt="""You are a code reviewer.
-    Focus on:
-    - Security issues
-    - Performance problems
-    - Code style
-    """
+from ripperdoc_agent_sdk import (
+    RipperdocSDKClient,
+    RipperdocAgentOptions,
+    CLINotFoundError,
+    SDKError
 )
 
-result = await client.query("Review the changes in src/")
+try:
+    client = RipperdocSDKClient()
+    await client.connect()
+    await client.query("执行操作")
+    async for message in client.receive_messages():
+        print(message)
+except CLINotFoundError:
+    print("找不到 Ripperdoc CLI！")
+except SDKError as e:
+    print(f"SDK 错误: {e}")
+finally:
+    await client.disconnect()
+```
+
+### 会话管理
+
+```python
+from ripperdoc_agent_sdk import RipperdocSDKClient, RipperdocAgentOptions
+
+options = RipperdocAgentOptions(max_turns=10)
+
+async with RipperdocSDKClient(options=options) as client:
+    print(f"会话 ID: {client.session_id}")
+
+    # 第一次查询
+    await client.query("这里有什么文件？")
+    async for msg in client.receive_messages():
+        pass
+
+    print(f"轮次计数: {client.turn_count}")
+
+    # 第二次查询
+    await client.query("读取 main.py")
+    async for msg in client.receive_messages():
+        pass
+
+    print(f"最终轮次计数: {client.turn_count}")
 ```

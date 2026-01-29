@@ -3,12 +3,12 @@ title: SDK 概览
 description: 作为 Python 库使用 Ripperdoc
 ---
 
-Ripperdoc 可以作为 Python SDK 使用，用于构建 AI 驱动的应用。
+Ripperdoc 提供了 Python SDK，用于构建具有程序化控制对话、工具和权限的 AI 驱动应用。
 
 ## 安装
 
 ```bash
-pip install ripperdoc
+pip install ripperdoc-agent-sdk
 ```
 
 ## 快速开始
@@ -19,17 +19,22 @@ pip install ripperdoc
 
 ```python
 import asyncio
-from ripperdoc.sdk import query, RipperdocOptions
+from ripperdoc_agent_sdk import query, RipperdocAgentOptions
 
 async def main():
-    options = RipperdocOptions(
+    options = RipperdocAgentOptions(
         model="main",
-        yolo_mode=True
+        permission_mode="default"
     )
 
-    async for message in query("Explain what this function does", options):
-        if hasattr(message, 'content'):
-            print(message.content)
+    async for message in query(
+        prompt="解释这个函数的作用",
+        options=options
+    ):
+        if message.type == "assistant":
+            for block in message.content:
+                if block.type == "text":
+                    print(block.text)
 
 asyncio.run(main())
 ```
@@ -40,77 +45,121 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from ripperdoc.sdk import RipperdocClient, RipperdocOptions
+from ripperdoc_agent_sdk import RipperdocSDKClient, RipperdocAgentOptions
 
 async def main():
-    options = RipperdocOptions(
+    options = RipperdocAgentOptions(
         model="main",
-        yolo_mode=True,
+        permission_mode="acceptEdits",
         verbose=True
     )
 
-    async with RipperdocClient(options=options) as client:
+    async with RipperdocSDKClient(options=options) as client:
         # 开始对话
-        await client.query("What files are in this project?")
+        await client.query("这个项目里有哪些文件？")
         async for message in client.receive_messages():
-            if hasattr(message, 'content'):
-                print(message.content)
+            if message.type == "assistant":
+                for block in message.content:
+                    if block.type == "text":
+                        print(block.text)
 
         # 继续对话
-        await client.query("Read the main.py file")
+        await client.query("读取 main.py 文件")
         async for message in client.receive_messages():
-            if hasattr(message, 'content'):
-                print(message.content)
+            if message.type == "assistant":
+                for block in message.content:
+                    if block.type == "text":
+                        print(block.text)
 
 asyncio.run(main())
 ```
 
-## RipperdocOptions
+## RipperdocAgentOptions
 
-`RipperdocOptions` 数据类用于配置 SDK 行为：
+`RipperdocAgentOptions` 类用于配置 SDK 行为：
 
 ```python
-from ripperdoc.sdk import RipperdocOptions
+from ripperdoc_agent_sdk import RipperdocAgentOptions
 
-options = RipperdocOptions(
+options = RipperdocAgentOptions(
+    # 模型配置
+    model="main",                   # 模型配置名称
+    max_thinking_tokens=0,          # 扩展思考 token 数（0 = 禁用）
+
+    # 权限模式（替代 yolo_mode）
+    permission_mode="default",      # "default" | "acceptEdits" | "bypassPermissions" | "plan"
+
     # 工具配置
-    tools=None,                    # 自定义工具列表（None = 默认）
     allowed_tools=["Read", "Glob"],  # 白名单工具
-    disallowed_tools=["Bash"],     # 黑名单工具
+    disallowed_tools=["Bash"],       # 黑名单工具
 
-    # 执行模式
-    yolo_mode=False,               # 跳过权限提示
-    verbose=False,                 # 启用详细输出
-
-    # 模型设置
-    model="main",                  # 模型配置名称
-    max_thinking_tokens=0,         # 扩展思考 token 数
+    # 行为设置
+    verbose=False,                  # 启用详细输出
+    max_turns=None,                 # 最大对话轮次（None = 无限制）
+    query_timeout=300.0,            # 查询超时时间，单位秒（默认: 300）
 
     # 上下文
-    context={},                    # 自定义上下文变量
-    system_prompt=None,            # 覆盖系统提示词
-    additional_instructions=None,  # 附加指令
+    cwd=None,                       # 工作目录路径
+    context={},                     # 自定义上下文变量
+    system_prompt=None,             # 覆盖系统提示词
+    additional_instructions=None,   # 附加指令
 
-    # 权限
-    permission_checker=None,       # 自定义权限检查器
+    # 会话管理
+    resume=None,                    # 要恢复的会话 ID
+    continue_conversation=False,    # 继续最近的对话
+    fork_session=False,             # 恢复时创建新分支
 
-    # 工作目录
-    cwd=None                       # 工作目录路径
+    # 自定义权限
+    permission_checker=None,        # 自定义权限检查器函数
+
+    # MCP 服务器
+    mcp_servers=None,               # MCP 服务器配置
+
+    # 程序化代理
+    agents=None,                    # 自定义子代理定义
+
+    # 程序化钩子
+    hooks=None,                     # 事件钩子回调
 )
+```
+
+### 权限模式
+
+SDK 支持四种权限模式：
+
+| 模式 | 描述 |
+|------|-------------|
+| `default` | 对危险操作提示（bash、文件编辑等） |
+| `acceptEdits` | 自动接受文件编辑，对其他危险操作提示 |
+| `bypassPermissions` | 允许所有操作，无需提示 |
+| `plan` | 规划模式 - 不执行，仅分析 |
+
+```python
+# 带提示的安全模式
+options = RipperdocAgentOptions(permission_mode="default")
+
+# 自动接受文件编辑
+options = RipperdocAgentOptions(permission_mode="acceptEdits")
+
+# 规划模式 - 不执行
+options = RipperdocAgentOptions(permission_mode="plan")
+
+# 完全自动化（谨慎使用）
+options = RipperdocAgentOptions(permission_mode="bypassPermissions")
 ```
 
 ### 工具过滤
 
-过滤可用工具：
+控制可用工具：
 
 ```python
 # 只允许读取操作
-options = RipperdocOptions(
+options = RipperdocAgentOptions(
     allowed_tools=["Read", "Glob", "Grep", "LS"]
 )
 
 # 允许所有工具除了 bash
-options = RipperdocOptions(
+options = RipperdocAgentOptions(
     disallowed_tools=["Bash"]
 )
 ```
@@ -120,78 +169,226 @@ options = RipperdocOptions(
 实现自定义权限逻辑：
 
 ```python
-from ripperdoc.sdk import RipperdocOptions
-from ripperdoc.core.permissions import PermissionResult
+from ripperdoc_agent_sdk import RipperdocAgentOptions, PermissionResultAllow, PermissionResultDeny
 
-async def my_permission_checker(tool, input_data):
-    tool_name = getattr(tool, 'name', tool.__class__.__name__)
-
+async def my_permission_checker(tool_name, tool_input, context):
     # 自动批准读取操作
     if tool_name in ['Read', 'Glob', 'Grep']:
-        return PermissionResult(allowed=True)
+        return PermissionResultAllow()
 
     # 拒绝危险命令
     if tool_name == 'Bash':
-        command = input_data.get('command', '')
+        command = tool_input.get('command', '')
         if 'rm -rf' in command:
-            return PermissionResult(
-                allowed=False,
-                reason="Dangerous command blocked"
-            )
+            return PermissionResultDeny(message="危险命令已阻止")
 
     # 其他情况询问
-    return PermissionResult(allowed=True)
+    return PermissionResultAllow()
 
-options = RipperdocOptions(
+options = RipperdocAgentOptions(
     permission_checker=my_permission_checker
 )
 ```
 
 ## 消息类型
 
-SDK 会产生不同类型的消息：
+SDK 会产生不同类型的结构化消息：
 
 ```python
-from ripperdoc.utils.messages import (
+from ripperdoc_agent_sdk import (
     UserMessage,
     AssistantMessage,
-    ProgressMessage
+    SystemMessage,
+    ResultMessage,
+    TextBlock,
+    ToolUseBlock,
+    ThinkingBlock
 )
 
 async for message in client.receive_messages():
     if isinstance(message, AssistantMessage):
-        print(f"Assistant: {message.content}")
-    elif isinstance(message, ProgressMessage):
-        print(f"Progress: {message.status}")
+        for block in message.content:
+            if isinstance(block, TextBlock):
+                print(f"文本: {block.text}")
+            elif isinstance(block, ThinkingBlock):
+                print(f"思考: {block.thinking}")
+            elif isinstance(block, ToolUseBlock):
+                print(f"工具: {block.name}")
+
+    elif isinstance(message, ResultMessage):
+        print(f"用量: {message.result.usage}")
 ```
 
-### ProgressMessage
+### 内容块
 
-进度消息表示正在进行的操作：
+消息包含不同类型的内容块：
+
+- **TextBlock**: 纯文本响应
+- **ThinkingBlock**: 扩展思考输出（针对启用思考的模型）
+- **ToolUseBlock**: 带参数的工具调用
+- **ToolResultBlock**: 工具执行结果
+
+## MCP 服务器
+
+集成外部 MCP 服务器以获取额外工具：
 
 ```python
-async for message in client.receive_messages():
-    if hasattr(message, 'type') and message.type == 'progress':
-        print(f"Status: {message.status}")
-        if hasattr(message, 'tool_name'):
-            print(f"Running tool: {message.tool_name}")
+from ripperdoc_agent_sdk import RipperdocAgentOptions, McpServerConfig
+
+options = RipperdocAgentOptions(
+    mcp_servers={
+        "filesystem": McpServerConfig(
+            type="stdio",
+            command="npx",
+            args=["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"]
+        ),
+        "postgres": McpServerConfig(
+            type="stdio",
+            command="npx",
+            args=["-y", "@modelcontextprotocol/server-postgres"],
+            env={"POSTGRES_CONNECTION_STRING": "postgresql://..."}
+        )
+    }
+)
 ```
 
-## 思考模式
+## SDK MCP 服务器（进程内工具）
 
-针对支持扩展思考的模型：
+定义在 Python 应用程序内运行的自定义工具：
 
 ```python
-options = RipperdocOptions(
-    model="reasoner",  # 使用启用思考的模型配置
-    max_thinking_tokens=8192
+from ripperdoc_agent_sdk import (
+    RipperdocAgentOptions,
+    query,
+    tool,
+    create_sdk_mcp_server
 )
 
-async for message in query("Solve this complex problem", options):
-    if hasattr(message, 'thinking'):
-        print(f"Thinking: {message.thinking}")
-    if hasattr(message, 'content'):
-        print(f"Response: {message.content}")
+@tool("add", "两个数相加", {"a": float, "b": float})
+async def add(args):
+    result = args["a"] + args["b"]
+    return {"content": [{"type": "text", "text": f"和: {result}"}]}
+
+@tool("multiply", "两个数相乘", {"a": float, "b": float})
+async def multiply(args):
+    result = args["a"] * args["b"]
+    return {"content": [{"type": "text", "text": f"积: {result}"}]}
+
+# 创建 SDK MCP 服务器
+calculator_server = create_sdk_mcp_server(
+    name="calculator",
+    version="1.0.0",
+    tools=[add, multiply]
+)
+
+# 与 Ripperdoc 一起使用
+options = RipperdocAgentOptions(
+    mcp_servers={"calculator": calculator_server},
+    allowed_tools=["add", "multiply"]
+)
+
+async for message in query(
+    prompt="25 * 17 + 10 等于多少？",
+    options=options
+):
+    if message.type == "assistant":
+        for block in message.content:
+            if block.type == "text":
+                print(block.text)
+```
+
+## 程序化代理
+
+以编程方式定义自定义子代理：
+
+```python
+from ripperdoc_agent_sdk import RipperdocAgentOptions, AgentConfig
+
+options = RipperdocAgentOptions(
+    agents={
+        "code-reviewer": AgentConfig(
+            description="审查代码的安全问题和最佳实践",
+            prompt="你是一位安全专家。专注于识别漏洞、注入攻击 "
+                   "以及安全最佳实践的遵循。",
+            tools=["Read", "Grep", "Glob"],
+            model="sonnet"
+        ),
+        "test-writer": AgentConfig(
+            description="为代码编写全面的测试",
+            prompt="你是一位测试专家。编写覆盖率高且包含边缘情况的完整单元测试。",
+            tools=["Read", "Write", "Glob", "Grep"],
+            model="haiku"
+        )
+    }
+)
+```
+
+## 钩子
+
+在执行期间拦截和修改事件：
+
+```python
+from ripperdoc_agent_sdk import RipperdocAgentOptions, HookMatcher
+
+async def log_tool_use(event, input_data):
+    print(f"使用工具: {input_data.get('tool_name')}")
+    return {}
+
+async def sanitize_input(event, input_data):
+    # 在执行前修改工具输入
+    return {"updated_input": sanitize(input_data)}
+
+options = RipperdocAgentOptions(
+    hooks={
+        "PreToolUse": [
+            HookMatcher(callback=log_tool_use, tool_pattern="*"),
+            HookMatcher(callback=sanitize_input, tool_pattern="Bash*")
+        ]
+    }
+)
+```
+
+### 钩子事件
+
+可用的钩子事件：
+
+- `PreToolUse` - 工具调用前
+- `PostToolUse` - 工具完成后
+- `UserPromptSubmit` - 用户提交提示时
+- `Stop` - 请求停止时
+- `SubagentStop` - 子代理停止时
+- `PreCompact` - 对话压缩前
+
+## 会话管理
+
+控制对话生命周期：
+
+```python
+from ripperdoc_agent_sdk import RipperdocSDKClient, RipperdocAgentOptions
+
+options = RipperdocAgentOptions(
+    max_turns=10,  # 限制对话为 10 轮
+)
+
+# 从现有会话恢复
+options = RipperdocAgentOptions(
+    resume="session-id-here"
+)
+
+# 继续最近的对话
+options = RipperdocAgentOptions(
+    continue_conversation=True
+)
+
+# 恢复时创建新分支
+options = RipperdocAgentOptions(
+    resume="session-id-here",
+    fork_session=True
+)
+
+async with RipperdocSDKClient(options=options) as client:
+    print(f"会话 ID: {client.session_id}")
+    print(f"轮次计数: {client.turn_count}")
 ```
 
 ## 使用场景
@@ -199,39 +396,43 @@ async for message in query("Solve this complex problem", options):
 ### 代码分析
 
 ```python
-from ripperdoc.sdk import query, RipperdocOptions
+from ripperdoc_agent_sdk import query, RipperdocAgentOptions
 
 async def analyze_code(code: str):
-    options = RipperdocOptions(
-        system_prompt="You are a security expert.",
-        allowed_tools=["Read"]
+    options = RipperdocAgentOptions(
+        system_prompt="你是一位安全专家。",
+        allowed_tools=["Read"],
+        permission_mode="default"
     )
 
     async for message in query(
-        f"Analyze this code for security issues:\n\n```python\n{code}\n```",
-        options
+        prompt=f"分析这段代码的安全问题:\n\n```python\n{code}\n```",
+        options=options
     ):
-        if hasattr(message, 'content'):
-            return message.content
+        if message.type == "assistant":
+            for block in message.content:
+                if block.type == "text":
+                    return block.text
 ```
 
 ### 自动化重构
 
 ```python
-from ripperdoc.sdk import RipperdocClient, RipperdocOptions
+from ripperdoc_agent_sdk import RipperdocSDKClient, RipperdocAgentOptions
 
 async def refactor_codebase():
-    options = RipperdocOptions(
-        yolo_mode=True,
-        allowed_tools=["Read", "Glob", "Grep", "Edit"]
+    options = RipperdocAgentOptions(
+        permission_mode="acceptEdits",
+        allowed_tools=["Read", "Glob", "Grep", "Edit"],
+        max_turns=20
     )
 
-    async with RipperdocClient(options=options) as client:
-        await client.query("Find all deprecated API calls")
+    async with RipperdocSDKClient(options=options) as client:
+        await client.query("查找所有已弃用的 API 调用")
         async for msg in client.receive_messages():
             pass  # 处理结果
 
-        await client.query("Update them to use the new API")
+        await client.query("将它们更新为使用新 API")
         async for msg in client.receive_messages():
             pass  # 处理结果
 ```
@@ -239,33 +440,47 @@ async def refactor_codebase():
 ### 生成文档
 
 ```python
-from ripperdoc.sdk import query, RipperdocOptions
+from ripperdoc_agent_sdk import query, RipperdocAgentOptions
 
 async def generate_docs():
-    options = RipperdocOptions(
-        allowed_tools=["Read", "Glob", "Grep"]
+    options = RipperdocAgentOptions(
+        allowed_tools=["Read", "Glob", "Grep"],
+        agents={
+            "doc-writer": AgentConfig(
+                description="生成 API 文档",
+                prompt="你是一位技术写作专家。生成清晰、简洁的文档。",
+            )
+        }
     )
 
     async for message in query(
-        "Generate API documentation for all public functions in src/api/",
-        options
+        prompt="为 src/api/ 中所有公共函数生成 API 文档",
+        options=options
     ):
-        if hasattr(message, 'content'):
-            print(message.content)
+        if message.type == "assistant":
+            for block in message.content:
+                if block.type == "text":
+                    print(block.text)
 ```
 
 ## SDK 特性
 
-- **Async/await 支持**：原生异步 Python API
-- **工具访问**：可使用任意 Ripperdoc 工具
-- **会话管理**：保持对话上下文
-- **Token 统计**：监控用量与成本
-- **自定义提示**：完全控制 system prompt
-- **权限控制**：自定义权限逻辑
-- **流式输出**：实时消息流
-- **思考模式**：扩展推理支持
+- **Async/await 支持**: 原生异步 Python API
+- **类型安全**: 完整的类型提示和 Pydantic 模型
+- **工具访问**: 可使用任意 Ripperdoc 工具
+- **会话管理**: 保持对话上下文
+- **权限控制**: 四种权限模式配合自定义检查器
+- **流式输出**: 实时消息流
+- **思考模式**: 扩展推理支持
+- **MCP 集成**: 连接外部 MCP 服务器
+- **SDK MCP 服务器**: 定义进程内工具
+- **程序化代理**: 动态代理定义
+- **钩子**: 拦截和修改执行
+- **子进程架构**: 通过 JSON 控制协议实现清晰分离
 
 ## 下一步
 
 - [SDK 客户端参考](/zh-CN/docs/sdk-client) - 详细 API 参考
-- [示例](https://github.com/quantmew/ripperdoc/tree/main/examples) - 示例脚本
+- [TypeScript SDK](/zh-CN/docs/sdk-typescript) - TypeScript/JavaScript SDK
+- [MCP 集成](/zh-CN/docs/mcp) - 模型上下文协议
+- [钩子](/zh-CN/docs/hooks) - 事件钩子和自定义

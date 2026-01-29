@@ -1,0 +1,775 @@
+---
+title: TypeScript SDK
+description: 使用 TypeScript/JavaScript 的 Ripperdoc SDK
+---
+
+Ripperdoc TypeScript SDK 提供了类型安全的接口，用于将 Ripperdoc 的 AI 编码能力集成到 TypeScript 和 JavaScript 应用程序中。
+
+## 安装
+
+```bash
+npm install ripperdoc-agent-sdk
+# 或
+yarn add ripperdoc-agent-sdk
+# 或
+pnpm add ripperdoc-agent-sdk
+```
+
+## 快速开始
+
+### 一次性查询
+
+适用于简单的单轮查询：
+
+```typescript
+import { query } from 'ripperdoc-agent-sdk';
+
+async function main() {
+  for await (const message of query('这个项目里有哪些文件？')) {
+    if (message.type === 'assistant') {
+      for (const block of message.content) {
+        if (block.type === 'text') {
+          console.log(block.text);
+        }
+      }
+    }
+  }
+}
+
+main();
+```
+
+### 持久客户端
+
+适用于多轮对话，提供完整控制：
+
+```typescript
+import { RipperdocClient, RipperdocOptions } from 'ripperdoc-agent-sdk';
+
+async function main() {
+  const options: RipperdocOptions = {
+    model: 'main',
+    permissionMode: 'acceptEdits',
+    verbose: true
+  };
+
+  const client = new RipperdocClient(options);
+
+  try {
+    await client.connect();
+
+    // 开始对话
+    await client.query('这个项目里有哪些文件？');
+    for await (const message of client.receiveMessages()) {
+      if (message.type === 'assistant') {
+        for (const block of message.content) {
+          if (block.type === 'text') {
+            console.log(block.text);
+          }
+        }
+      }
+    }
+
+    // 继续对话
+    await client.query('读取 main.ts 文件');
+    for await (const message of client.receiveMessages()) {
+      if (message.type === 'assistant') {
+        for (const block of message.content) {
+          if (block.type === 'text') {
+            console.log(block.text);
+          }
+        }
+      }
+    }
+  } finally {
+    await client.close();
+  }
+}
+
+main();
+```
+
+## RipperdocOptions
+
+`RipperdocOptions` 接口用于配置 SDK 行为：
+
+```typescript
+interface RipperdocOptions {
+  // 模型配置
+  model?: string;                    // 模型配置名称
+  maxThinkingTokens?: number;        // 扩展思考 token 数（0 = 禁用）
+
+  // 权限模式
+  permissionMode?: PermissionMode;   // "default" | "acceptEdits" | "bypassPermissions" | "plan"
+
+  // 工具配置
+  allowedTools?: string[];           // 白名单工具
+  disallowedTools?: string[];        // 黑名单工具
+
+  // 行为设置
+  verbose?: boolean;                 // 启用详细输出
+  maxTurns?: number;                 // 最大对话轮次（undefined = 无限制）
+
+  // 上下文
+  cwd?: string;                      // 工作目录路径
+  context?: Record<string, string>;  // 自定义上下文变量
+  systemPrompt?: string;             // 覆盖系统提示词
+  additionalInstructions?: string | string[];  // 附加指令
+
+  // 扩展
+  mcpServers?: McpServerConfig[];    // MCP 服务器配置
+  agents?: AgentConfig[];            // 程序化代理定义
+  hooks?: HookConfig[];              // 事件钩子回调
+
+  // 传输
+  ripperdocPath?: string;            // Ripperdoc CLI 路径
+}
+```
+
+### 权限模式
+
+SDK 支持四种权限模式：
+
+| 模式 | 描述 |
+|------|-------------|
+| `default` | 对危险操作提示（bash、文件编辑等） |
+| `acceptEdits` | 自动接受文件编辑，对其他危险操作提示 |
+| `bypassPermissions` | 允许所有操作，无需提示 |
+| `plan` | 规划模式 - 不执行，仅分析 |
+
+```typescript
+// 带提示的安全模式
+const options: RipperdocOptions = {
+  permissionMode: 'default'
+};
+
+// 自动接受文件编辑
+const options: RipperdocOptions = {
+  permissionMode: 'acceptEdits'
+};
+
+// 规划模式 - 不执行
+const options: RipperdocOptions = {
+  permissionMode: 'plan'
+};
+
+// 完全自动化（谨慎使用）
+const options: RipperdocOptions = {
+  permissionMode: 'bypassPermissions'
+};
+```
+
+### 工具过滤
+
+控制可用工具：
+
+```typescript
+// 只允许读取操作
+const options: RipperdocOptions = {
+  allowedTools: ['Read', 'Glob', 'Grep', 'LS']
+};
+
+// 允许所有工具除了 bash
+const options: RipperdocOptions = {
+  disallowedTools: ['Bash']
+};
+```
+
+## 消息类型
+
+SDK 会产生不同类型的结构化消息：
+
+```typescript
+import type {
+  AssistantMessage,
+  TextBlock,
+  ThinkingBlock,
+  ToolUseBlock,
+  ResultMessage
+} from 'ripperdoc-agent-sdk';
+
+async function processMessages(client: RipperdocClient) {
+  for await (const message of client.receiveMessages()) {
+    switch (message.type) {
+      case 'assistant':
+        for (const block of message.content) {
+          switch (block.type) {
+            case 'text':
+              console.log(`文本: ${block.text}`);
+              break;
+            case 'thinking':
+              console.log(`思考: ${block.thinking}`);
+              break;
+            case 'tool_use':
+              console.log(`工具: ${block.name}`);
+              break;
+          }
+        }
+        break;
+
+      case 'result':
+        console.log(`用量: ${message.result.usage}`);
+        break;
+    }
+  }
+}
+```
+
+### 内容块
+
+消息包含不同类型的内容块：
+
+- **TextBlock**: 纯文本响应
+- **ThinkingBlock**: 扩展思考输出（针对启用思考的模型）
+- **ToolUseBlock**: 带参数的工具调用
+- **ToolResultBlock**: 工具执行结果
+- **ImageBlock**: 图片内容
+
+## MCP 服务器
+
+集成外部 MCP 服务器以获取额外工具：
+
+```typescript
+import { RipperdocOptions, McpServerConfig } from 'ripperdoc-agent-sdk';
+
+const options: RipperdocOptions = {
+  mcpServers: [
+    {
+      name: 'filesystem',
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-filesystem', '/allowed/path']
+    },
+    {
+      name: 'postgres',
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-postgres'],
+      env: {
+        POSTGRES_CONNECTION_STRING: 'postgresql://...'
+      }
+    }
+  ]
+};
+```
+
+## 程序化代理
+
+以编程方式定义自定义子代理：
+
+```typescript
+import { RipperdocOptions, AgentConfig } from 'ripperdoc-agent-sdk';
+
+const options: RipperdocOptions = {
+  agents: [
+    {
+      name: 'code-reviewer',
+      agentType: 'code-reviewer',
+      whenToUse: '审查代码的安全问题',
+      tools: ['Read', 'Grep', 'Glob'],
+      systemPrompt: '你是一位安全专家。专注于识别漏洞。',
+      model: 'sonnet'
+    },
+    {
+      name: 'test-writer',
+      agentType: 'test-writer',
+      whenToUse: '编写全面的测试',
+      tools: ['Read', 'Write', 'Glob', 'Grep'],
+      systemPrompt: '你是一位测试专家。',
+      model: 'haiku'
+    }
+  ]
+};
+```
+
+## 钩子
+
+在执行期间拦截和修改事件：
+
+```typescript
+import { RipperdocOptions, HookConfig, HookEvent } from 'ripperdoc-agent-sdk';
+
+// 定义钩子回调
+const logToolUse = (context: HookContext) => {
+  console.log(`使用工具: ${context.toolName}`);
+};
+
+const sanitizeInput = (context: HookContext) => {
+  // 在执行前修改工具输入
+  return { updatedInput: sanitize(context.input) };
+};
+
+const options: RipperdocOptions = {
+  hooks: [
+    {
+      event: 'PreToolUse',
+      callback: 'logToolUse',
+      pattern: { toolName: '*' }
+    },
+    {
+      event: 'PreToolUse',
+      callback: 'sanitizeInput',
+      pattern: { toolName: 'Bash*' }
+    }
+  ]
+};
+```
+
+### 钩子事件
+
+可用的钩子事件：
+
+- `PreToolUse` - 工具调用前
+- `PostToolUse` - 工具完成后
+- `PreRead` - 读取文件前
+- `PostRead` - 读取文件后
+- `PreEdit` - 编辑文件前
+- `PostEdit` - 编辑文件后
+- `PreWrite` - 写入文件前
+- `PostWrite` - 写入文件后
+- `PreBash` - 执行 bash 命令前
+- `PostBash` - 执行 bash 命令后
+- `OnError` - 发生错误时
+- `OnTurnStart` - 轮次开始时
+- `OnTurnEnd` - 轮次结束时
+- `OnQueryStart` - 查询开始时
+- `OnQueryEnd` - 查询结束时
+
+## RipperdocClient
+
+用于会话式交互的主类。
+
+### 构造函数
+
+```typescript
+import { RipperdocClient, RipperdocOptions } from 'ripperdoc-agent-sdk';
+
+const options: RipperdocOptions = {
+  model: 'main',
+  permissionMode: 'default'
+};
+
+const client = new RipperdocClient(options);
+```
+
+### 方法
+
+#### connect
+
+连接到 Ripperdoc CLI：
+
+```typescript
+async connect(): Promise<void>
+```
+
+**示例：**
+```typescript
+await client.connect();
+```
+
+#### close
+
+关闭连接：
+
+```typescript
+async close(): Promise<void>
+```
+
+**示例：**
+```typescript
+await client.close();
+```
+
+#### query
+
+使用给定提示启动查询：
+
+```typescript
+async query(prompt: string): Promise<void>
+```
+
+**抛出：**
+- `ClientNotConnectedError` - 客户端未连接
+- `QueryInProgressError` - 已有查询正在进行
+
+**示例：**
+```typescript
+await client.query('这个项目里有哪些文件？');
+```
+
+#### receiveMessages
+
+作为异步生成器接收消息：
+
+```typescript
+async *receiveMessages(): AsyncGenerator<Message, void, unknown>
+```
+
+**产生：**
+- `Message`: 来自对话的消息
+
+**示例：**
+```typescript
+for await (const message of client.receiveMessages()) {
+  console.log(message);
+}
+```
+
+#### setPermissionMode
+
+在对话期间更改权限模式：
+
+```typescript
+async setPermissionMode(mode: PermissionMode): Promise<void>
+```
+
+**示例：**
+```typescript
+await client.setPermissionMode('acceptEdits');
+```
+
+#### setModel
+
+在对话期间更改 AI 模型：
+
+```typescript
+async setModel(model: string): Promise<void>
+```
+
+**示例：**
+```typescript
+await client.setModel('sonnet');
+```
+
+#### getServerInfo
+
+获取服务器信息：
+
+```typescript
+async getServerInfo(): Promise<ServerInfo>
+```
+
+**返回：**
+- 服务器信息，包括版本、功能、可用工具和模型
+
+**示例：**
+```typescript
+const info = await client.getServerInfo();
+console.log(`版本: ${info.version}`);
+console.log(`工具: ${info.availableTools.join(', ')}`);
+```
+
+### 属性
+
+#### isConnected
+
+检查客户端是否已连接：
+
+```typescript
+get isConnected(): boolean
+```
+
+#### isQuerying
+
+检查是否有查询正在进行：
+
+```typescript
+get isQuerying(): boolean
+```
+
+#### sessionIdValue
+
+获取当前会话 ID：
+
+```typescript
+get sessionIdValue(): string
+```
+
+## 错误处理
+
+SDK 为不同的失败场景提供特定的错误类型：
+
+```typescript
+import {
+  RipperdocClient,
+  CLINotFoundError,
+  QueryFailedError,
+  InitializationError
+} from 'ripperdoc-agent-sdk';
+
+async function main() {
+  const client = new RipperdocClient();
+
+  try {
+    await client.connect();
+    await client.query('执行操作');
+    for await (const message of client.receiveMessages()) {
+      console.log(message);
+    }
+  } catch (error) {
+    if (error instanceof CLINotFoundError) {
+      console.error('找不到 Ripperdoc CLI！');
+    } else if (error instanceof QueryFailedError) {
+      console.error('查询失败:', error.message);
+    } else if (error instanceof InitializationError) {
+      console.error('初始化失败:', error.message);
+    } else {
+      console.error('未知错误:', error);
+    }
+  } finally {
+    await client.close();
+  }
+}
+```
+
+### 错误类型
+
+- `CLINotFoundError` - 找不到 Ripperdoc CLI 可执行文件
+- `InitializationError` - 会话初始化失败
+- `QueryFailedError` - 查询执行失败
+- `ClientNotConnectedError` - 未连接时尝试操作
+- `ClientAlreadyConnectedError` - 已连接时尝试连接
+- `QueryInProgressError` - 有查询运行时尝试新查询
+- `NoActiveQueryError` - 没有活动查询时尝试接收消息
+
+## 使用场景
+
+### 代码分析
+
+```typescript
+import { query, RipperdocOptions } from 'ripperdoc-agent-sdk';
+
+async function analyzeCode(code: string) {
+  const options: RipperdocOptions = {
+    systemPrompt: '你是一位安全专家。',
+    allowedTools: ['Read'],
+    permissionMode: 'default'
+  };
+
+  for await (const message of query(
+    `分析这段代码的安全问题:\n\n\`\`\`typescript\n${code}\n\`\`\``,
+    options
+  )) {
+    if (message.type === 'assistant') {
+      for (const block of message.content) {
+        if (block.type === 'text') {
+          return block.text;
+        }
+      }
+    }
+  }
+}
+```
+
+### 自动化重构
+
+```typescript
+import { RipperdocClient, RipperdocOptions } from 'ripperdoc-agent-sdk';
+
+async function refactorCodebase() {
+  const options: RipperdocOptions = {
+    permissionMode: 'acceptEdits',
+    allowedTools: ['Read', 'Glob', 'Grep', 'Edit'],
+    maxTurns: 20
+  };
+
+  const client = new RipperdocClient(options);
+
+  try {
+    await client.connect();
+
+    await client.query('查找所有已弃用的 API 调用');
+    for await (const msg of client.receiveMessages()) {
+      // 处理结果
+    }
+
+    await client.query('将它们更新为使用新 API');
+    for await (const msg of client.receiveMessages()) {
+      // 处理结果
+    }
+  } finally {
+    await client.close();
+  }
+}
+```
+
+### 生成文档
+
+```typescript
+import { query, RipperdocOptions, AgentConfig } from 'ripperdoc-agent-sdk';
+
+async function generateDocs() {
+  const options: RipperdocOptions = {
+    allowedTools: ['Read', 'Glob', 'Grep'],
+    agents: [
+      {
+        name: 'doc-writer',
+        agentType: 'doc-writer',
+        whenToUse: '生成 API 文档',
+        systemPrompt: '你是一位技术写作专家。生成清晰、简洁的文档。'
+      }
+    ]
+  };
+
+  for await (const message of query(
+    '为 src/api/ 中所有公共函数生成 API 文档',
+    options
+  )) {
+    if (message.type === 'assistant') {
+      for (const block of message.content) {
+        if (block.type === 'text') {
+          console.log(block.text);
+        }
+      }
+    }
+  }
+}
+```
+
+## 类型定义
+
+### 消息类型
+
+```typescript
+interface UserMessage {
+  type: 'user';
+  content: ContentBlock[];
+  role: 'user';
+}
+
+interface AssistantMessage {
+  type: 'assistant';
+  content: ContentBlock[];
+  role: 'assistant';
+}
+
+interface SystemMessage {
+  type: 'system';
+  content: string;
+  role: 'system';
+}
+
+interface ResultMessage {
+  type: 'result';
+  result: ResultData;
+}
+
+interface ResultData {
+  status: 'success' | 'error';
+  usage?: UsageInfo;
+  error?: string;
+}
+
+interface UsageInfo {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens?: number;
+  cacheReadTokens?: number;
+  costUsd?: number;
+  durationMs?: number;
+}
+
+type Message = UserMessage | AssistantMessage | SystemMessage | ResultMessage;
+```
+
+### 内容块类型
+
+```typescript
+interface TextBlock {
+  type: 'text';
+  text: string;
+}
+
+interface ThinkingBlock {
+  type: 'thinking';
+  thinking: string;
+}
+
+interface ToolUseBlock {
+  type: 'tool_use';
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+interface ToolResultBlock {
+  type: 'tool_result';
+  toolUseId: string;
+  content: string | ContentBlock[];
+  isError?: boolean;
+}
+
+interface ImageBlock {
+  type: 'image';
+  source: {
+    type: 'url';
+    url: string;
+  };
+}
+
+type ContentBlock = TextBlock | ThinkingBlock | ToolUseBlock | ToolResultBlock | ImageBlock;
+```
+
+### 配置类型
+
+```typescript
+type PermissionMode = 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
+
+interface McpServerConfig {
+  name: string;
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
+interface AgentConfig {
+  name: string;
+  agentType: string;
+  whenToUse?: string;
+  tools?: string[];
+  systemPrompt?: string;
+  model?: string;
+}
+
+interface HookConfig {
+  event: HookEvent;
+  callback: string;
+  pattern?: {
+    toolName?: string;
+    toolInput?: Record<string, unknown>;
+  };
+}
+
+type HookEvent =
+  | 'PreToolUse'
+  | 'PostToolUse'
+  | 'PreRead'
+  | 'PostRead'
+  | 'PreEdit'
+  | 'PostEdit'
+  | 'PreWrite'
+  | 'PostWrite'
+  | 'PreBash'
+  | 'PostBash'
+  | 'OnError'
+  | 'OnTurnStart'
+  | 'OnTurnEnd'
+  | 'OnQueryStart'
+  | 'OnQueryEnd';
+```
+
+## SDK 特性
+
+- **类型安全**: 全面的 TypeScript 定义
+- **流式输出**: 使用异步生成器的实时响应流
+- **错误处理**: 针对特定失败场景的详细错误层次结构
+- **权限管理**: 可配置的安全模式
+- **会话管理**: 带清理的持久连接
+- **工具访问**: 完全访问 Ripperdoc 工具
+- **MCP 集成**: 连接外部 MCP 服务器
+- **程序化代理**: 动态代理定义
+- **钩子**: 事件拦截和修改
+
+## 下一步
+
+- [Python SDK](/zh-CN/docs/sdk-overview) - Python SDK 文档
+- [MCP 集成](/zh-CN/docs/mcp) - 模型上下文协议
+- [钩子](/zh-CN/docs/hooks) - 事件钩子和自定义

@@ -1,0 +1,775 @@
+---
+title: TypeScript SDK
+description: Using Ripperdoc with TypeScript/JavaScript
+---
+
+The Ripperdoc TypeScript SDK provides a type-safe interface for integrating Ripperdoc's AI coding capabilities into TypeScript and JavaScript applications.
+
+## Installation
+
+```bash
+npm install ripperdoc-agent-sdk
+# or
+yarn add ripperdoc-agent-sdk
+# or
+pnpm add ripperdoc-agent-sdk
+```
+
+## Quick Start
+
+### One-Shot Query
+
+For simple, single-turn queries:
+
+```typescript
+import { query } from 'ripperdoc-agent-sdk';
+
+async function main() {
+  for await (const message of query('What files are in this project?')) {
+    if (message.type === 'assistant') {
+      for (const block of message.content) {
+        if (block.type === 'text') {
+          console.log(block.text);
+        }
+      }
+    }
+  }
+}
+
+main();
+```
+
+### Persistent Client
+
+For multi-turn conversations with full control:
+
+```typescript
+import { RipperdocClient, RipperdocOptions } from 'ripperdoc-agent-sdk';
+
+async function main() {
+  const options: RipperdocOptions = {
+    model: 'main',
+    permissionMode: 'acceptEdits',
+    verbose: true
+  };
+
+  const client = new RipperdocClient(options);
+
+  try {
+    await client.connect();
+
+    // Start a conversation
+    await client.query('What files are in this project?');
+    for await (const message of client.receiveMessages()) {
+      if (message.type === 'assistant') {
+        for (const block of message.content) {
+          if (block.type === 'text') {
+            console.log(block.text);
+          }
+        }
+      }
+    }
+
+    // Continue the conversation
+    await client.query('Read the main.ts file');
+    for await (const message of client.receiveMessages()) {
+      if (message.type === 'assistant') {
+        for (const block of message.content) {
+          if (block.type === 'text') {
+            console.log(block.text);
+          }
+        }
+      }
+    }
+  } finally {
+    await client.close();
+  }
+}
+
+main();
+```
+
+## RipperdocOptions
+
+The `RipperdocOptions` interface configures SDK behavior:
+
+```typescript
+interface RipperdocOptions {
+  // Model configuration
+  model?: string;                    // Model profile name
+  maxThinkingTokens?: number;        // Extended thinking tokens (0 = disabled)
+
+  // Permission mode
+  permissionMode?: PermissionMode;   // "default" | "acceptEdits" | "bypassPermissions" | "plan"
+
+  // Tool configuration
+  allowedTools?: string[];           // Whitelist specific tools
+  disallowedTools?: string[];        // Blacklist specific tools
+
+  // Behavior settings
+  verbose?: boolean;                 // Enable verbose output
+  maxTurns?: number;                 // Max conversation turns (undefined = unlimited)
+
+  // Context
+  cwd?: string;                      // Working directory path
+  context?: Record<string, string>;  // Custom context variables
+  systemPrompt?: string;             // Override system prompt
+  additionalInstructions?: string | string[];  // Additional instructions
+
+  // Extensions
+  mcpServers?: McpServerConfig[];    // MCP server configurations
+  agents?: AgentConfig[];            // Programmatic agent definitions
+  hooks?: HookConfig[];              // Event hook callbacks
+
+  // Transport
+  ripperdocPath?: string;            // Path to Ripperdoc CLI
+}
+```
+
+### Permission Modes
+
+The SDK supports four permission modes:
+
+| Mode | Description |
+|------|-------------|
+| `default` | Prompts for dangerous operations (bash, file edits, etc.) |
+| `acceptEdits` | Auto-accept file edits, prompt for other dangerous operations |
+| `bypassPermissions` | Allow all operations without prompting |
+| `plan` | Planning mode - no execution, analysis only |
+
+```typescript
+// Safe mode with prompts
+const options: RipperdocOptions = {
+  permissionMode: 'default'
+};
+
+// Auto-accept file edits
+const options: RipperdocOptions = {
+  permissionMode: 'acceptEdits'
+};
+
+// Planning mode - no execution
+const options: RipperdocOptions = {
+  permissionMode: 'plan'
+};
+
+// Fully automated (use with caution)
+const options: RipperdocOptions = {
+  permissionMode: 'bypassPermissions'
+};
+```
+
+### Tool Filtering
+
+Control which tools are available:
+
+```typescript
+// Only allow read operations
+const options: RipperdocOptions = {
+  allowedTools: ['Read', 'Glob', 'Grep', 'LS']
+};
+
+// Allow all except bash
+const options: RipperdocOptions = {
+  disallowedTools: ['Bash']
+};
+```
+
+## Message Types
+
+The SDK yields different message types with structured content:
+
+```typescript
+import type {
+  AssistantMessage,
+  TextBlock,
+  ThinkingBlock,
+  ToolUseBlock,
+  ResultMessage
+} from 'ripperdoc-agent-sdk';
+
+async function processMessages(client: RipperdocClient) {
+  for await (const message of client.receiveMessages()) {
+    switch (message.type) {
+      case 'assistant':
+        for (const block of message.content) {
+          switch (block.type) {
+            case 'text':
+              console.log(`Text: ${block.text}`);
+              break;
+            case 'thinking':
+              console.log(`Thinking: ${block.thinking}`);
+              break;
+            case 'tool_use':
+              console.log(`Tool: ${block.name}`);
+              break;
+          }
+        }
+        break;
+
+      case 'result':
+        console.log(`Usage: ${message.result.usage}`);
+        break;
+    }
+  }
+}
+```
+
+### Content Blocks
+
+Messages contain content blocks of different types:
+
+- **TextBlock**: Plain text response
+- **ThinkingBlock**: Extended thinking output (for models with thinking enabled)
+- **ToolUseBlock**: Tool being called with parameters
+- **ToolResultBlock**: Result from a tool execution
+- **ImageBlock**: Image content
+
+## MCP Servers
+
+Integrate external MCP servers for additional tools:
+
+```typescript
+import { RipperdocOptions, McpServerConfig } from 'ripperdoc-agent-sdk';
+
+const options: RipperdocOptions = {
+  mcpServers: [
+    {
+      name: 'filesystem',
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-filesystem', '/allowed/path']
+    },
+    {
+      name: 'postgres',
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-postgres'],
+      env: {
+        POSTGRES_CONNECTION_STRING: 'postgresql://...'
+      }
+    }
+  ]
+};
+```
+
+## Programmatic Agents
+
+Define custom subagents programmatically:
+
+```typescript
+import { RipperdocOptions, AgentConfig } from 'ripperdoc-agent-sdk';
+
+const options: RipperdocOptions = {
+  agents: [
+    {
+      name: 'code-reviewer',
+      agentType: 'code-reviewer',
+      whenToUse: 'Review code for security issues',
+      tools: ['Read', 'Grep', 'Glob'],
+      systemPrompt: 'You are a security expert. Focus on vulnerabilities.',
+      model: 'sonnet'
+    },
+    {
+      name: 'test-writer',
+      agentType: 'test-writer',
+      whenToUse: 'Write comprehensive tests',
+      tools: ['Read', 'Write', 'Glob', 'Grep'],
+      systemPrompt: 'You are a testing specialist.',
+      model: 'haiku'
+    }
+  ]
+};
+```
+
+## Hooks
+
+Intercept and modify events during execution:
+
+```typescript
+import { RipperdocOptions, HookConfig, HookEvent } from 'ripperdoc-agent-sdk';
+
+// Define your hook callbacks
+const logToolUse = (context: HookContext) => {
+  console.log(`Tool used: ${context.toolName}`);
+};
+
+const sanitizeInput = (context: HookContext) => {
+  // Modify tool input before execution
+  return { updatedInput: sanitize(context.input) };
+};
+
+const options: RipperdocOptions = {
+  hooks: [
+    {
+      event: 'PreToolUse',
+      callback: 'logToolUse',
+      pattern: { toolName: '*' }
+    },
+    {
+      event: 'PreToolUse',
+      callback: 'sanitizeInput',
+      pattern: { toolName: 'Bash*' }
+    }
+  ]
+};
+```
+
+### Hook Events
+
+Available hook events:
+
+- `PreToolUse` - Before a tool is called
+- `PostToolUse` - After a tool completes
+- `PreRead` - Before reading a file
+- `PostRead` - After reading a file
+- `PreEdit` - Before editing a file
+- `PostEdit` - After editing a file
+- `PreWrite` - Before writing a file
+- `PostWrite` - After writing a file
+- `PreBash` - Before executing bash command
+- `PostBash` - After executing bash command
+- `OnError` - When an error occurs
+- `OnTurnStart` - When a turn starts
+- `OnTurnEnd` - When a turn ends
+- `OnQueryStart` - When a query starts
+- `OnQueryEnd` - When a query ends
+
+## RipperdocClient
+
+The main class for session-based interactions.
+
+### Constructor
+
+```typescript
+import { RipperdocClient, RipperdocOptions } from 'ripperdoc-agent-sdk';
+
+const options: RipperdocOptions = {
+  model: 'main',
+  permissionMode: 'default'
+};
+
+const client = new RipperdocClient(options);
+```
+
+### Methods
+
+#### connect
+
+Connect to the Ripperdoc CLI:
+
+```typescript
+async connect(): Promise<void>
+```
+
+**Example:**
+```typescript
+await client.connect();
+```
+
+#### close
+
+Close the connection:
+
+```typescript
+async close(): Promise<void>
+```
+
+**Example:**
+```typescript
+await client.close();
+```
+
+#### query
+
+Start a query with the given prompt:
+
+```typescript
+async query(prompt: string): Promise<void>
+```
+
+**Throws:**
+- `ClientNotConnectedError` - If client is not connected
+- `QueryInProgressError` - If a query is already in progress
+
+**Example:**
+```typescript
+await client.query('What files are in this project?');
+```
+
+#### receiveMessages
+
+Receive messages as an async generator:
+
+```typescript
+async *receiveMessages(): AsyncGenerator<Message, void, unknown>
+```
+
+**Yields:**
+- `Message`: Messages from the conversation
+
+**Example:**
+```typescript
+for await (const message of client.receiveMessages()) {
+  console.log(message);
+}
+```
+
+#### setPermissionMode
+
+Change permission mode during conversation:
+
+```typescript
+async setPermissionMode(mode: PermissionMode): Promise<void>
+```
+
+**Example:**
+```typescript
+await client.setPermissionMode('acceptEdits');
+```
+
+#### setModel
+
+Change the AI model during conversation:
+
+```typescript
+async setModel(model: string): Promise<void>
+```
+
+**Example:**
+```typescript
+await client.setModel('sonnet');
+```
+
+#### getServerInfo
+
+Get server information:
+
+```typescript
+async getServerInfo(): Promise<ServerInfo>
+```
+
+**Returns:**
+- Server information including version, features, available tools and models
+
+**Example:**
+```typescript
+const info = await client.getServerInfo();
+console.log(`Version: ${info.version}`);
+console.log(`Tools: ${info.availableTools.join(', ')}`);
+```
+
+### Properties
+
+#### isConnected
+
+Check if client is connected:
+
+```typescript
+get isConnected(): boolean
+```
+
+#### isQuerying
+
+Check if a query is in progress:
+
+```typescript
+get isQuerying(): boolean
+```
+
+#### sessionIdValue
+
+Get the current session ID:
+
+```typescript
+get sessionIdValue(): string
+```
+
+## Error Handling
+
+The SDK provides specific error types for different failure scenarios:
+
+```typescript
+import {
+  RipperdocClient,
+  CLINotFoundError,
+  QueryFailedError,
+  InitializationError
+} from 'ripperdoc-agent-sdk';
+
+async function main() {
+  const client = new RipperdocClient();
+
+  try {
+    await client.connect();
+    await client.query('Do something');
+    for await (const message of client.receiveMessages()) {
+      console.log(message);
+    }
+  } catch (error) {
+    if (error instanceof CLINotFoundError) {
+      console.error('Ripperdoc CLI not found!');
+    } else if (error instanceof QueryFailedError) {
+      console.error('Query failed:', error.message);
+    } else if (error instanceof InitializationError) {
+      console.error('Initialization failed:', error.message);
+    } else {
+      console.error('Unknown error:', error);
+    }
+  } finally {
+    await client.close();
+  }
+}
+```
+
+### Error Types
+
+- `CLINotFoundError` - Ripperdoc CLI executable not found
+- `InitializationError` - Failed to initialize session
+- `QueryFailedError` - Query execution failed
+- `ClientNotConnectedError` - Operation attempted while not connected
+- `ClientAlreadyConnectedError` - Connection attempted while already connected
+- `QueryInProgressError` - Query attempted while another query is running
+- `NoActiveQueryError` - Message receive attempted without active query
+
+## Use Cases
+
+### Code Analysis
+
+```typescript
+import { query, RipperdocOptions } from 'ripperdoc-agent-sdk';
+
+async function analyzeCode(code: string) {
+  const options: RipperdocOptions = {
+    systemPrompt: 'You are a security expert.',
+    allowedTools: ['Read'],
+    permissionMode: 'default'
+  };
+
+  for await (const message of query(
+    `Analyze this code for security issues:\n\n\`\`\`typescript\n${code}\n\`\`\``,
+    options
+  )) {
+    if (message.type === 'assistant') {
+      for (const block of message.content) {
+        if (block.type === 'text') {
+          return block.text;
+        }
+      }
+    }
+  }
+}
+```
+
+### Automated Refactoring
+
+```typescript
+import { RipperdocClient, RipperdocOptions } from 'ripperdoc-agent-sdk';
+
+async function refactorCodebase() {
+  const options: RipperdocOptions = {
+    permissionMode: 'acceptEdits',
+    allowedTools: ['Read', 'Glob', 'Grep', 'Edit'],
+    maxTurns: 20
+  };
+
+  const client = new RipperdocClient(options);
+
+  try {
+    await client.connect();
+
+    await client.query('Find all deprecated API calls');
+    for await (const msg of client.receiveMessages()) {
+      // Process results
+    }
+
+    await client.query('Update them to use the new API');
+    for await (const msg of client.receiveMessages()) {
+      // Process results
+    }
+  } finally {
+    await client.close();
+  }
+}
+```
+
+### Documentation Generation
+
+```typescript
+import { query, RipperdocOptions, AgentConfig } from 'ripperdoc-agent-sdk';
+
+async function generateDocs() {
+  const options: RipperdocOptions = {
+    allowedTools: ['Read', 'Glob', 'Grep'],
+    agents: [
+      {
+        name: 'doc-writer',
+        agentType: 'doc-writer',
+        whenToUse: 'Generate API documentation',
+        systemPrompt: 'You are a technical writer. Generate clear, concise documentation.'
+      }
+    ]
+  };
+
+  for await (const message of query(
+    'Generate API documentation for all public functions in src/api/',
+    options
+  )) {
+    if (message.type === 'assistant') {
+      for (const block of message.content) {
+        if (block.type === 'text') {
+          console.log(block.text);
+        }
+      }
+    }
+  }
+}
+```
+
+## Type Definitions
+
+### Message Types
+
+```typescript
+interface UserMessage {
+  type: 'user';
+  content: ContentBlock[];
+  role: 'user';
+}
+
+interface AssistantMessage {
+  type: 'assistant';
+  content: ContentBlock[];
+  role: 'assistant';
+}
+
+interface SystemMessage {
+  type: 'system';
+  content: string;
+  role: 'system';
+}
+
+interface ResultMessage {
+  type: 'result';
+  result: ResultData;
+}
+
+interface ResultData {
+  status: 'success' | 'error';
+  usage?: UsageInfo;
+  error?: string;
+}
+
+interface UsageInfo {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens?: number;
+  cacheReadTokens?: number;
+  costUsd?: number;
+  durationMs?: number;
+}
+
+type Message = UserMessage | AssistantMessage | SystemMessage | ResultMessage;
+```
+
+### Content Block Types
+
+```typescript
+interface TextBlock {
+  type: 'text';
+  text: string;
+}
+
+interface ThinkingBlock {
+  type: 'thinking';
+  thinking: string;
+}
+
+interface ToolUseBlock {
+  type: 'tool_use';
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+interface ToolResultBlock {
+  type: 'tool_result';
+  toolUseId: string;
+  content: string | ContentBlock[];
+  isError?: boolean;
+}
+
+interface ImageBlock {
+  type: 'image';
+  source: {
+    type: 'url';
+    url: string;
+  };
+}
+
+type ContentBlock = TextBlock | ThinkingBlock | ToolUseBlock | ToolResultBlock | ImageBlock;
+```
+
+### Configuration Types
+
+```typescript
+type PermissionMode = 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
+
+interface McpServerConfig {
+  name: string;
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
+interface AgentConfig {
+  name: string;
+  agentType: string;
+  whenToUse?: string;
+  tools?: string[];
+  systemPrompt?: string;
+  model?: string;
+}
+
+interface HookConfig {
+  event: HookEvent;
+  callback: string;
+  pattern?: {
+    toolName?: string;
+    toolInput?: Record<string, unknown>;
+  };
+}
+
+type HookEvent =
+  | 'PreToolUse'
+  | 'PostToolUse'
+  | 'PreRead'
+  | 'PostRead'
+  | 'PreEdit'
+  | 'PostEdit'
+  | 'PreWrite'
+  | 'PostWrite'
+  | 'PreBash'
+  | 'PostBash'
+  | 'OnError'
+  | 'OnTurnStart'
+  | 'OnTurnEnd'
+  | 'OnQueryStart'
+  | 'OnQueryEnd';
+```
+
+## SDK Features
+
+- **Type Safety**: Comprehensive TypeScript definitions
+- **Streaming**: Real-time response streaming with async generators
+- **Error Handling**: Detailed error hierarchy for specific failure scenarios
+- **Permission Management**: Configurable safety modes
+- **Session Management**: Persistent connections with cleanup
+- **Tool Access**: Full access to Ripperdoc tools
+- **MCP Integration**: Connect external MCP servers
+- **Programmatic Agents**: Dynamic agent definitions
+- **Hooks**: Event interception and modification
+
+## Next Steps
+
+- [Python SDK](/docs/sdk-overview) - Python SDK documentation
+- [MCP Integration](/docs/mcp) - Model Context Protocol
+- [Hooks](/docs/hooks) - Event hooks and customization
