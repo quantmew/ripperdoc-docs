@@ -13,11 +13,13 @@ Ripperdoc 内置权限系统，用于避免非预期操作。
 - 编辑或写入文件
 - 运行可能具有破坏性的操作
 
-当出现权限提示时，你可以：
+当出现权限提示时，你可以使用以下选项：
 
-- **y/yes**：允许操作
-- **n/no**：拒绝操作
-- **a/always**：始终允许此类操作
+- **1/y/yes**：允许此操作
+- **2/s/session/a/always**：在此会话中始终允许此类操作
+- **3/n/no**：拒绝操作
+
+权限提示界面使用 Rich Panel 绘制，提供更好的视觉一致性。对于 Bash 工具，会显示完整的命令详情（包括超时、sandbox 等参数）以供安全审查。
 
 ## YOLO 模式
 
@@ -69,6 +71,15 @@ ripperdoc --yolo
 | `working_directories` | 允许操作的目录 |
 | `bash_allow_rules` | 自动批准 bash 命令的规则 |
 | `bash_deny_rules` | 自动拒绝 bash 命令的规则 |
+
+### 会话级别权限
+
+除了配置文件中的持久化规则，Ripperdoc 还支持会话级别的权限管理：
+
+- **`session_allowed_tools`**：会话期间允许的工具列表
+- **`session_tool_rules`**：会话期间的工具规则（例如 bash 命令模式）
+
+这些设置在会话结束后清除，不会被持久化。当你选择"2/s"（会话允许）选项时，相应的工具或命令规则会被添加到会话级别权限中。
 
 ### 规则模式语法
 
@@ -167,6 +178,41 @@ Sandbox 模式：
 ```
 
 将 `.ripperdoc/config.local.json` 加入 `.gitignore`。
+
+## 工具自定义权限检查
+
+工具可以实现自定义的 `check_permissions` 方法来覆盖默认权限行为。该方法接收工具输入和权限上下文，返回一个 `PermissionDecision` 对象。
+
+```python
+from ripperdoc.utils.permissions import PermissionDecision, ToolRule
+
+def check_permissions(self, parsed_input, context):
+    """自定义权限检查逻辑。
+
+    Args:
+        parsed_input: 解析后的工具输入
+        context: 包含 allowed_rules, denied_rules, allowed_working_directories 的字典
+
+    Returns:
+        PermissionDecision 对象，包含 behavior、message、rule_suggestions
+    """
+    allowed_rules = context.get("allowed_rules", set())
+    denied_rules = context.get("denied_rules", set())
+
+    # 返回决策
+    return PermissionDecision(
+        behavior="allow",  # allow, deny, ask, passthrough
+        message="自定义权限检查结果",
+        rule_suggestions=[ToolRule(tool_name="ToolName", rule_content="pattern")],
+        updated_input=parsed_input  # 可选：修改后的输入
+    )
+```
+
+支持的行为类型：
+- `allow`：自动批准操作
+- `deny`：自动拒绝操作
+- `ask`：询问用户确认
+- `passthrough`：使用默认行为（通常为询问）
 
 ## 最佳实践
 

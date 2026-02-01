@@ -9,6 +9,21 @@ Ripperdoc 可通过环境变量进行配置。如果你在配置文件里设置�
 
 如果已在配置文件里设置 `api_key`，可以跳过这些变量。
 
+### RIPPERDOC_ 环境变量（内存配置）
+
+这些变量允许完全通过环境变量配置模型，无需修改配置文件：
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_BASE_URL` | API 基础 URL | - |
+| `RIPPERDOC_API_KEY` | API 密钥 | - |
+| `RIPPERDOC_AUTH_TOKEN` | Bearer token 认证 | - |
+| `RIPPERDOC_MODEL` | 模型名称（main 指针） | - |
+| `RIPPERDOC_SMALL_FAST_MODEL` | 快速模型名称（quick 指针） | - |
+| `RIPPERDOC_PROTOCOL` | 协议类型 | 自动检测 |
+
+当设置 `RIPPERDOC_BASE_URL` 时，系统会在内存中创建 ModelProfile，不写入配置文件。协议类型可以显式指定，或根据 URL 和模型名称自动推断。
+
 ### 提供商 API Keys
 
 | 变量 | 说明 |
@@ -105,6 +120,8 @@ Ripperdoc 可通过环境变量进行配置。如果你在配置文件里设置�
 
 ## .env 示例
 
+### 使用提供商 API Keys
+
 ```bash
 # API Keys
 ANTHROPIC_API_KEY=YOUR_ANTHROPIC_KEY
@@ -130,6 +147,23 @@ RIPPERDOC_LSP_TIMEOUT=30
 
 # Logging
 RIPPERDOC_LOG_LEVEL=WARNING
+```
+
+### 使用 RIPPERDOC_ 环境变量（内存配置）
+
+```bash
+# 使用自定义 API 端点
+RIPPERDOC_BASE_URL=https://api.example.com/v1
+RIPPERDOC_API_KEY=YOUR_API_KEY
+RIPPERDOC_MODEL=claude-sonnet-4-5-20250929
+
+# 或使用 Bearer token 认证
+RIPPERDOC_BASE_URL=https://api.example.com/v1
+RIPPERDOC_AUTH_TOKEN=YOUR_BEARER_TOKEN
+RIPPERDOC_PROTOCOL=openai_compatible
+
+# 指定不同的 quick 模型
+RIPPERDOC_SMALL_FAST_MODEL=haiku-model-name
 ```
 
 ## 加载环境变量

@@ -149,6 +149,12 @@ Thinking 模式选项：
 | `none` | 禁用扩展思考（默认） |
 | `deepseek` | DeepSeek 风格思考 |
 | `anthropic` | Anthropic 风格思考（Claude） |
+| `openrouter` | OpenRouter 兼容模式 |
+| `qwen` | Qwen 通义千问风格 |
+| `gemini_openai` | Gemini OpenAI 兼容模式 |
+| `openai` | OpenAI 风格思考 |
+
+当未设置时，系统会根据提供商自动推断正确的思考模式。
 
 ### OpenAI 工具模式
 
@@ -270,12 +276,37 @@ Ripperdoc 内置主题系统，用于自定义 CLI 外观。在全局配置中�
 
 API key 可以直接写在配置文件里。环境变量是可选的，也可以用来替代。
 
+### 提供商 API Keys
+
 | 变量 | 说明 |
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | 如果已在配置里设置 `api_key` 则可选 |
 | `OPENAI_API_KEY` | 如果已在配置里设置 `api_key` 则可选 |
 | `DEEPSEEK_API_KEY` | 如果已在配置里设置 `api_key` 则可选 |
 | `GEMINI_API_KEY` | 如果已在配置里设置 `api_key` 则可选 |
+
+### RIPPERDOC_ 环境变量
+
+这些变量允许完全在内存中创建模型配置，不依赖配置文件：
+
+| 变量 | 说明 |
+|----------|-------------|
+| `RIPPERDOC_BASE_URL` | API 基础 URL（设置后将创建内存中的模型配置） |
+| `RIPPERDOC_API_KEY` | API 密钥 |
+| `RIPPERDOC_AUTH_TOKEN` | Bearer token 认证 |
+| `RIPPERDOC_MODEL` | 模型名称 |
+| `RIPPERDOC_SMALL_FAST_MODEL` | 快速模型名称（用于 quick 指针） |
+| `RIPPERDOC_PROTOCOL` | 协议类型（anthropic、openai_compatible、gemini） |
+
+当设置 `RIPPERDOC_BASE_URL` 时，系统会：
+1. 自动检测协议类型（基于 URL 和模型名称）
+2. 在内存中创建 ModelProfile（不写入配置文件）
+3. 使用环境变量中的认证信息
+
+### 其他环境变量
+
+| 变量 | 说明 |
+|----------|-------------|
 | `RIPPERDOC_MAX_RETRIES` | API 最大重试次数（默认：10） |
 | `RIPPERDOC_API_TIMEOUT` | API 超时时间（秒，默认：120） |
 
