@@ -106,11 +106,14 @@ Hooks intercept lifecycle events:
 
 ```
 Event Flow:
-1. UserPromptSubmit → User sends message
-2. PreToolUse → Before tool execution
-3. PermissionRequest → When permission needed
-4. PostToolUse → After tool completes
-5. Stop → Agent finishes responding
+1. Setup → Repository setup/maintenance (first startup per project)
+2. UserPromptSubmit → User sends message
+3. PreToolUse → Before tool execution
+4. PermissionRequest → When permission needed
+5. PostToolUse → After tool completes
+6. PostToolUseFailure → After tool fails or times out
+7. SubagentStart → Before a subagent starts
+8. Stop → Agent finishes responding
 ```
 
 ## Data Flow

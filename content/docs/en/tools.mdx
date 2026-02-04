@@ -16,6 +16,10 @@ Read file: /path/to/file.py
 Read lines 10-50: /path/to/file.py
 ```
 
+Notes:
+- Files larger than 256KB or with more than 2000 lines require `offset`/`limit`.
+- You can override these limits with `RIPPERDOC_MAX_READ_FILE_SIZE_BYTES` and `RIPPERDOC_MAX_READ_LINES`.
+
 ### Edit
 
 Replace text in a file using exact string matching.

@@ -92,8 +92,11 @@ ripperdoc --model reasoner
 | `thinking_mode` | 扩展思考模式 | 否 |
 | `context_window` | 上下文窗口大小 | 否 |
 | `openai_tool_mode` | OpenAI 工具调用模式 | 否 |
+| `supports_vision` | 覆盖图像/视觉支持（true/false） | 否 |
 | `input_cost_per_million_tokens` | 费用追踪（输入） | 否 |
 | `output_cost_per_million_tokens` | 费用追踪（输出） | 否 |
+
+如果模型支持图像输入但自动识别失败，可设置 `supports_vision` 为 `true` 强制启用。
 
 ### 提供商选项
 
@@ -223,6 +226,9 @@ Thinking 模式选项：
   "allowed_tools": ["Read", "Glob", "Grep", "LS", "Edit", "Bash"],
   "bash_allow_rules": [
     {"pattern": "npm *", "description": "Allow npm"}
+  ],
+  "bash_ask_rules": [
+    {"pattern": "terraform *", "description": "Always ask before terraform"}
   ],
   "bash_deny_rules": [
     {"pattern": "rm -rf /", "description": "Block dangerous"}

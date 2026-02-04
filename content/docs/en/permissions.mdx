@@ -18,6 +18,7 @@ When a permission prompt appears, you can:
 - **y/yes**: Allow the operation
 - **n/no**: Deny the operation
 - **a/always**: Always allow this type of operation
+- **Esc**: Deny the operation
 
 ## YOLO Mode
 
@@ -52,6 +53,12 @@ Permissions are configured in project-level files:
       "description": "Allow git status"
     }
   ],
+  "bash_ask_rules": [
+    {
+      "pattern": "terraform *",
+      "description": "Always ask before terraform"
+    }
+  ],
   "bash_deny_rules": [
     {
       "pattern": "rm -rf /",
@@ -68,6 +75,7 @@ Permissions are configured in project-level files:
 | `allowed_tools` | List of tools the AI can use |
 | `working_directories` | Directories where operations are allowed |
 | `bash_allow_rules` | Rules to auto-approve bash commands |
+| `bash_ask_rules` | Rules to always prompt before bash commands |
 | `bash_deny_rules` | Rules to auto-deny bash commands |
 
 ### Rule Pattern Syntax
@@ -78,6 +86,14 @@ Rules use glob-style patterns:
 - `npm *` - Prefix match
 - `*test*` - Contains match
 - `git @(status|diff|log)` - Multiple alternatives
+
+### Rule Precedence
+
+When multiple rules match, precedence is:
+
+1. **deny**
+2. **ask**
+3. **allow**
 
 ### Example Configurations
 
@@ -146,12 +162,15 @@ Ripperdoc will prompt for confirmation when accessing sensitive directories:
 
 ## Managing Permissions
 
-Use the `/permissions` command to view and manage permissions:
+Use the `/permissions` command to view and manage permissions (interactive UI when available):
 
 ```
+> /permissions
+> /permissions tui
 > /permissions list
 > /permissions add allow Bash "npm *"
-> /permissions remove 1
+> /permissions add ask Bash "terraform *"
+> /permissions remove local ask "terraform *"
 ```
 
 ## Local Configuration Override
@@ -162,6 +181,9 @@ Use `.ripperdoc/config.local.json` for local-only settings that shouldn't be com
 {
   "bash_allow_rules": [
     {"pattern": "docker *", "description": "Local docker access"}
+  ],
+  "bash_ask_rules": [
+    {"pattern": "kubectl *", "description": "Always ask before kubectl"}
   ]
 }
 ```
@@ -173,6 +195,7 @@ Add `.ripperdoc/config.local.json` to your `.gitignore`.
 1. **Start with defaults**: Use the default permission system until you understand your workflow
 2. **Allow specific commands**: Create allow rules for frequently used safe commands
 3. **Deny dangerous patterns**: Explicitly deny patterns like `rm -rf /`
-4. **Use sandbox for exploration**: Use sandbox mode when exploring unfamiliar codebases
-5. **Review before YOLO**: Only use YOLO mode after reviewing what Ripperdoc will do
-6. **Use local config**: Put personal/machine-specific rules in `config.local.json`
+4. **Use ask rules for risky tools**: Require confirmation for sensitive commands
+5. **Use sandbox for exploration**: Use sandbox mode when exploring unfamiliar codebases
+6. **Review before YOLO**: Only use YOLO mode after reviewing what Ripperdoc will do
+7. **Use local config**: Put personal/machine-specific rules in `config.local.json`

@@ -354,10 +354,13 @@ options = RipperdocAgentOptions(
 
 - `PreToolUse` - 工具调用前
 - `PostToolUse` - 工具完成后
+- `PostToolUseFailure` - 工具失败或超时后
 - `UserPromptSubmit` - 用户提交提示时
 - `Stop` - 请求停止时
+- `SubagentStart` - 子代理启动前
 - `SubagentStop` - 子代理停止时
 - `PreCompact` - 对话压缩前
+- `Setup` - 仓库初始化/维护（每个项目首次启动）
 
 ## 会话管理
 

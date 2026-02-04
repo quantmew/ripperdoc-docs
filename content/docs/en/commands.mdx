@@ -129,7 +129,7 @@ Show detailed session statistics.
 
 #### /cost
 
-Show token usage and estimated costs.
+Show token usage and estimated costs (includes cache read/write tokens when supported).
 
 ```
 > /cost
@@ -165,10 +165,12 @@ View or modify configuration.
 
 #### /models
 
-List and switch between model profiles.
+Manage model profiles (interactive UI by default).
 
 ```
 > /models
+> /models tui
+> /models list
 > /models use fast
 ```
 
@@ -196,12 +198,14 @@ List available tools.
 
 #### /permissions
 
-Manage permission rules.
+Manage permission rules (interactive UI by default).
 
 ```
 > /permissions
+> /permissions tui
 > /permissions list
 > /permissions add allow Bash "npm test"
+> /permissions add ask Bash "terraform *"
 ```
 
 ### Extension Commands
@@ -235,18 +239,25 @@ Load a skill.
 
 #### /agents
 
-List agent definitions.
+Manage agent definitions and runs (interactive UI by default).
 
 ```
 > /agents
+> /agents tui
+> /agents list
+> /agents runs
+> /agents show <id>
+> /agents cancel <id>
 ```
 
 #### /tasks
 
-List running subagent tasks.
+Manage background shell tasks started with `run_in_background`.
 
 ```
 > /tasks
+> /tasks show <id>
+> /tasks kill <id>
 ```
 
 #### /mcp

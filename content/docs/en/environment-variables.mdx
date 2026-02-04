@@ -28,6 +28,28 @@ If you already set `api_key` in your config, you can skip these variables.
 | `OPENAI_BASE_URL` | OpenAI API base URL | `https://api.openai.com/v1` |
 | `OPENAI_API_BASE` | Alternative OpenAI base URL | - |
 
+## RIPPERDOC_ In-Memory Model Config
+
+When `RIPPERDOC_BASE_URL` is set, Ripperdoc builds a ModelProfile in memory and does not write it to config files.
+
+| Variable | Description |
+|----------|-------------|
+| `RIPPERDOC_BASE_URL` | API base URL |
+| `RIPPERDOC_API_KEY` | API key for the base URL |
+| `RIPPERDOC_AUTH_TOKEN` | Bearer token (alternative to API key) |
+| `RIPPERDOC_MODEL` | Model name (main pointer) |
+| `RIPPERDOC_SMALL_FAST_MODEL` | Quick model name (quick pointer) |
+| `RIPPERDOC_PROTOCOL` | Provider override (`anthropic`, `openai_compatible`, `gemini`) |
+
+Example:
+
+```bash
+RIPPERDOC_BASE_URL=https://api.example.com/v1
+RIPPERDOC_API_KEY=YOUR_API_KEY
+RIPPERDOC_MODEL=claude-sonnet-4-5-20250929
+RIPPERDOC_PROTOCOL=openai_compatible
+```
+
 ## Behavior Settings
 
 ### Timeouts and Retries
@@ -36,6 +58,8 @@ If you already set `api_key` in your config, you can skip these variables.
 |----------|-------------|---------|
 | `RIPPERDOC_API_TIMEOUT` | API request timeout (seconds) | `120` |
 | `RIPPERDOC_MAX_RETRIES` | Maximum API retry attempts | `10` |
+| `RIPPERDOC_TOOL_TIMEOUT` | Per-tool execution timeout (seconds) | `300` |
+| `RIPPERDOC_CONCURRENT_TOOL_TIMEOUT` | Total timeout for concurrent tool batches (seconds) | `600` |
 
 ### Context and Memory
 
@@ -53,7 +77,8 @@ If you already set `api_key` in your config, you can skip these variables.
 |----------|-------------|---------|
 | `RIPPERDOC_FILE_CACHE_MAX_ENTRIES` | Max cached file entries | `500` |
 | `RIPPERDOC_FILE_CACHE_MAX_MEMORY_MB` | Max file cache memory (MB) | `50` |
-| `RIPPERDOC_MAX_READ_FILE_SIZE_MB` | Max file size to read (MB) | `50` |
+| `RIPPERDOC_MAX_READ_FILE_SIZE_BYTES` | Max file size to read (bytes) | `262144` |
+| `RIPPERDOC_MAX_READ_LINES` | Max lines to read without limit | `2000` |
 
 ### Bash Tool
 
@@ -123,7 +148,8 @@ RIPPERDOC_BASH_TIMEOUT_MS=300000
 RIPPERDOC_BASH_TASK_TTL_SEC=7200
 
 # File settings
-RIPPERDOC_MAX_READ_FILE_SIZE_MB=100
+RIPPERDOC_MAX_READ_FILE_SIZE_BYTES=1048576
+RIPPERDOC_MAX_READ_LINES=4000
 
 # LSP settings
 RIPPERDOC_LSP_TIMEOUT=30

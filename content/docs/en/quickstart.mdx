@@ -69,9 +69,28 @@ During a session, you can use slash commands:
 | `Tab` (empty input) | Toggle thinking mode on/off |
 | `Tab` (with text) | Accept completion or show suggestions |
 | `Alt+Enter` | Insert newline |
-| `ESC` | Interrupt current operation |
+| `Esc Esc` | Open history picker |
+| `Ctrl+C` | Interrupt running query (press twice to exit) |
 
 **Thinking Mode**: When enabled (⚡ Thinking), the model uses extended thinking for better reasoning on complex tasks. The status appears on the right side of your prompt.
+
+## Image Input
+
+If your model supports vision, reference images directly in your prompt:
+
+```
+Explain what's wrong in @screenshots/error.png
+```
+
+If auto-detection fails, set `supports_vision: true` in your model profile.
+
+## Piping Input
+
+You can pipe a one-off prompt into Ripperdoc:
+
+```bash
+echo "Summarize this repo" | ripperdoc
+```
 
 ## Example Session
 

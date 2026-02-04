@@ -142,7 +142,9 @@ Use the my-agent to analyze the database schema
 ### View Running Tasks
 
 ```
-> /tasks
+> /agents runs
+> /agents show <id>
+> /agents cancel <id>
 ```
 
 ### View Agent Definitions
@@ -150,6 +152,8 @@ Use the my-agent to analyze the database schema
 ```
 > /agents
 ```
+
+Background shell tasks (from `run_in_background` in Bash) are managed via `/tasks`.
 
 ## Best Practices
 

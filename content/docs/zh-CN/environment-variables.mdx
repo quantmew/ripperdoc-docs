@@ -51,6 +51,8 @@ Ripperdoc 可通过环境变量进行配置。如果你在配置文件里设置�
 |----------|-------------|---------|
 | `RIPPERDOC_API_TIMEOUT` | API 请求超时（秒） | `120` |
 | `RIPPERDOC_MAX_RETRIES` | API 最大重试次数 | `10` |
+| `RIPPERDOC_TOOL_TIMEOUT` | 单个工具执行超时（秒） | `300` |
+| `RIPPERDOC_CONCURRENT_TOOL_TIMEOUT` | 并发工具批次总超时（秒） | `600` |
 
 ### 上下文与记忆
 
@@ -68,7 +70,8 @@ Ripperdoc 可通过环境变量进行配置。如果你在配置文件里设置�
 |----------|-------------|---------|
 | `RIPPERDOC_FILE_CACHE_MAX_ENTRIES` | 最大文件缓存条目 | `500` |
 | `RIPPERDOC_FILE_CACHE_MAX_MEMORY_MB` | 最大文件缓存内存（MB） | `50` |
-| `RIPPERDOC_MAX_READ_FILE_SIZE_MB` | 允许读取的最大文件大小（MB） | `50` |
+| `RIPPERDOC_MAX_READ_FILE_SIZE_BYTES` | 允许读取的最大文件大小（字节） | `262144` |
+| `RIPPERDOC_MAX_READ_LINES` | 未指定 limit 时最大可读行数 | `2000` |
 
 ### Bash 工具
 
@@ -140,7 +143,8 @@ RIPPERDOC_BASH_TIMEOUT_MS=300000
 RIPPERDOC_BASH_TASK_TTL_SEC=7200
 
 # File settings
-RIPPERDOC_MAX_READ_FILE_SIZE_MB=100
+RIPPERDOC_MAX_READ_FILE_SIZE_BYTES=1048576
+RIPPERDOC_MAX_READ_LINES=4000
 
 # LSP settings
 RIPPERDOC_LSP_TIMEOUT=30

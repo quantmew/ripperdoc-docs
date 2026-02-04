@@ -319,6 +319,7 @@ const options: RipperdocOptions = {
 
 - `PreToolUse` - 工具调用前
 - `PostToolUse` - 工具完成后
+- `PostToolUseFailure` - 工具失败或超时后
 - `PreRead` - 读取文件前
 - `PostRead` - 读取文件后
 - `PreEdit` - 编辑文件前
@@ -332,6 +333,9 @@ const options: RipperdocOptions = {
 - `OnTurnEnd` - 轮次结束时
 - `OnQueryStart` - 查询开始时
 - `OnQueryEnd` - 查询结束时
+- `SubagentStart` - 子代理启动前
+- `SubagentStop` - 子代理停止时
+- `Setup` - 仓库初始化/维护（每个项目首次启动）
 
 ## RipperdocClient
 
@@ -741,6 +745,7 @@ interface HookConfig {
 type HookEvent =
   | 'PreToolUse'
   | 'PostToolUse'
+  | 'PostToolUseFailure'
   | 'PreRead'
   | 'PostRead'
   | 'PreEdit'
@@ -753,7 +758,10 @@ type HookEvent =
   | 'OnTurnStart'
   | 'OnTurnEnd'
   | 'OnQueryStart'
-  | 'OnQueryEnd';
+  | 'OnQueryEnd'
+  | 'SubagentStart'
+  | 'SubagentStop'
+  | 'Setup';
 ```
 
 ## SDK 特性

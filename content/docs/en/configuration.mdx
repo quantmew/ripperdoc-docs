@@ -92,8 +92,11 @@ ripperdoc --model reasoner
 | `thinking_mode` | Extended thinking mode | No |
 | `context_window` | Context window size | No |
 | `openai_tool_mode` | Tool calling mode for OpenAI | No |
+| `supports_vision` | Override image/vision support (true/false) | No |
 | `input_cost_per_million_tokens` | Cost tracking (input) | No |
 | `output_cost_per_million_tokens` | Cost tracking (output) | No |
+
+Set `supports_vision` to `true` if your model supports image input and auto-detection does not pick it up.
 
 ### Provider Options
 
@@ -217,6 +220,9 @@ For OpenAI-compatible APIs:
   "allowed_tools": ["Read", "Glob", "Grep", "LS", "Edit", "Bash"],
   "bash_allow_rules": [
     {"pattern": "npm *", "description": "Allow npm"}
+  ],
+  "bash_ask_rules": [
+    {"pattern": "terraform *", "description": "Always ask before terraform"}
   ],
   "bash_deny_rules": [
     {"pattern": "rm -rf /", "description": "Block dangerous"}

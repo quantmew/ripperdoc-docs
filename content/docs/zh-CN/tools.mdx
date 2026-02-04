@@ -16,6 +16,10 @@ Read file: /path/to/file.py
 Read lines 10-50: /path/to/file.py
 ```
 
+说明：
+- 文件超过 256KB 或行数超过 2000 时需要使用 `offset`/`limit`。
+- 可通过 `RIPPERDOC_MAX_READ_FILE_SIZE_BYTES` 和 `RIPPERDOC_MAX_READ_LINES` 调整限制。
+
 ### Edit
 
 使用精确字符串匹配替换文件中的文本。

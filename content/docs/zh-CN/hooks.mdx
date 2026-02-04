@@ -11,14 +11,17 @@ Hooks 允许你在 Ripperdoc 生命周期的不同阶段执行自定义脚本。
 |-------|-------------|
 | `PreToolUse` | 工具执行前 |
 | `PostToolUse` | 工具完成后 |
+| `PostToolUseFailure` | 工具失败或超时后 |
 | `PermissionRequest` | 显示权限对话框时 |
 | `UserPromptSubmit` | 用户提交消息时 |
 | `Notification` | 状态通知 |
 | `Stop` | 主代理完成时 |
+| `SubagentStart` | 子代理（Task）启动前 |
 | `SubagentStop` | 子代理（Task）完成时 |
 | `PreCompact` | 上下文压缩前 |
 | `SessionStart` | 会话开始或恢复时 |
 | `SessionEnd` | 会话结束时 |
+| `Setup` | 仓库初始化/维护（每个项目首次启动） |
 
 ## 配置文件
 
@@ -124,6 +127,8 @@ Hooks 在以下 JSON 文件中配置（按顺序加载）：
 
 `matcher` 字段控制 hook 何时运行：
 
+适用事件：`PreToolUse`、`PermissionRequest`、`PostToolUse`、`PostToolUseFailure`。
+
 - **精确工具名**：`"Bash"`、`"Edit"`、`"Write"`
 - **正则表达式**：`"Edit|Write"`、`"mcp__.*__write.*"`
 - **匹配所有**：`"*"` 或省略 matcher 字段
@@ -171,6 +176,23 @@ Hooks 通过标准输入接收 JSON 格式的上下文。所有 hooks 的公共�
 }
 ```
 
+### PostToolUseFailure 输入
+
+在工具执行出错或超时时触发。
+
+```json
+{
+  "hook_event_name": "PostToolUseFailure",
+  "session_id": "abc123",
+  "cwd": "/path/to/project",
+  "tool_name": "Bash",
+  "tool_input": {"command": "npm test"},
+  "tool_response": null,
+  "tool_error": "Tool 'Bash' timed out after 300 seconds",
+  "tool_use_id": "tool_123"
+}
+```
+
 ### PermissionRequest 输入
 
 ```json
@@ -201,6 +223,19 @@ Hooks 通过标准输入接收 JSON 格式的上下文。所有 hooks 的公共�
 }
 ```
 
+### SubagentStart 输入
+
+```json
+{
+  "hook_event_name": "SubagentStart",
+  "subagent_type": "codebase-explorer",
+  "prompt": "Inspect the hooks system and summarize gaps",
+  "resume": null,
+  "run_in_background": false,
+  "tool_use_id": "tool_789"
+}
+```
+
 ### PreCompact 输入
 
 ```json
@@ -223,6 +258,18 @@ Hooks 通过标准输入接收 JSON 格式的上下文。所有 hooks 的公共�
 ```
 
 `source` 字段可以是：`startup`、`resume`、`clear`、`compact`。
+
+### Setup 输入
+
+```json
+{
+  "hook_event_name": "Setup",
+  "session_id": "abc123",
+  "cwd": "/path/to/project"
+}
+```
+
+Setup 会在每个项目首次 `SessionStart` 且 `source="startup"` 时触发。
 
 ### SessionEnd 输入
 
@@ -265,7 +312,7 @@ Hooks 可以输出 JSON 来控制执行：
 | `allow` | PreToolUse, PermissionRequest | 跳过权限检查，自动批准 |
 | `deny` | PreToolUse, PermissionRequest | 阻止操作 |
 | `ask` | PreToolUse | 询问用户确认 |
-| `block` | PostToolUse, UserPromptSubmit, Stop, SubagentStop | 阻止/防止停止 |
+| `block` | PostToolUse, PostToolUseFailure, UserPromptSubmit, Stop, SubagentStop | 阻止/防止停止 |
 
 ### 高级输出格式
 
@@ -387,6 +434,26 @@ Hooks 通过环境变量获取上下文：
           {
             "type": "command",
             "command": "jq -r '.tool_input.file_path // empty' | grep '\\.py$' | xargs -r black 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### 工具失败提醒
+
+```json
+{
+  "hooks": {
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_name + \" failed: \" + (.tool_error // \"unknown\")' | xargs -I {} notify-send 'Ripperdoc' '{}'"
           }
         ]
       }

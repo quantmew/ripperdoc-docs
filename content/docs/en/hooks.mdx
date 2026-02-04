@@ -11,14 +11,17 @@ Hooks let you execute custom scripts at various points in Ripperdoc's lifecycle.
 |-------|-------------|
 | `PreToolUse` | Before a tool executes |
 | `PostToolUse` | After a tool completes |
+| `PostToolUseFailure` | After a tool fails or times out |
 | `PermissionRequest` | When permission dialog is shown |
 | `UserPromptSubmit` | When user submits a message |
 | `Notification` | For status notifications |
 | `Stop` | When the main agent completes |
+| `SubagentStart` | Before a subagent (Task) starts |
 | `SubagentStop` | When a subagent (Task) completes |
 | `PreCompact` | Before context compaction |
 | `SessionStart` | When a session begins or resumes |
 | `SessionEnd` | When a session ends |
+| `Setup` | Repository setup/maintenance (first startup per project) |
 
 ## Configuration Files
 
@@ -124,6 +127,8 @@ Use an LLM to process the hook (supported for `Stop`, `SubagentStop`, `UserPromp
 
 The `matcher` field controls when hooks run:
 
+Applicable events: `PreToolUse`, `PermissionRequest`, `PostToolUse`, `PostToolUseFailure`.
+
 - **Exact tool name**: `"Bash"`, `"Edit"`, `"Write"`
 - **Regex pattern**: `"Edit|Write"`, `"mcp__.*__write.*"`
 - **Match all**: `"*"` or omit the matcher field
@@ -171,6 +176,23 @@ Hooks receive context as JSON via stdin. Common fields for all hooks:
 }
 ```
 
+### PostToolUseFailure Input
+
+Runs when a tool execution errors or times out.
+
+```json
+{
+  "hook_event_name": "PostToolUseFailure",
+  "session_id": "abc123",
+  "cwd": "/path/to/project",
+  "tool_name": "Bash",
+  "tool_input": {"command": "npm test"},
+  "tool_response": null,
+  "tool_error": "Tool 'Bash' timed out after 300 seconds",
+  "tool_use_id": "tool_123"
+}
+```
+
 ### PermissionRequest Input
 
 ```json
@@ -201,6 +223,19 @@ Hooks receive context as JSON via stdin. Common fields for all hooks:
 }
 ```
 
+### SubagentStart Input
+
+```json
+{
+  "hook_event_name": "SubagentStart",
+  "subagent_type": "codebase-explorer",
+  "prompt": "Inspect the hooks system and summarize gaps",
+  "resume": null,
+  "run_in_background": false,
+  "tool_use_id": "tool_789"
+}
+```
+
 ### PreCompact Input
 
 ```json
@@ -223,6 +258,18 @@ The `trigger` field can be `manual` (from `/compact` command) or `auto` (automat
 ```
 
 The `source` field can be: `startup`, `resume`, `clear`, `compact`.
+
+### Setup Input
+
+```json
+{
+  "hook_event_name": "Setup",
+  "session_id": "abc123",
+  "cwd": "/path/to/project"
+}
+```
+
+Setup runs once per project on the first SessionStart with `source: "startup"`.
 
 ### SessionEnd Input
 
@@ -265,7 +312,7 @@ Hooks can output JSON to control execution:
 | `allow` | PreToolUse, PermissionRequest | Bypass permission, auto-approve |
 | `deny` | PreToolUse, PermissionRequest | Block the operation |
 | `ask` | PreToolUse | Prompt user for confirmation |
-| `block` | PostToolUse, UserPromptSubmit, Stop, SubagentStop | Block/prevent stopping |
+| `block` | PostToolUse, PostToolUseFailure, UserPromptSubmit, Stop, SubagentStop | Block/prevent stopping |
 
 ### Advanced Output Format
 
@@ -387,6 +434,26 @@ Legacy variables (deprecated but still available):
           {
             "type": "command",
             "command": "jq -r '.tool_input.file_path // empty' | grep '\\.py$' | xargs -r black 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Notify on Tool Failure
+
+```json
+{
+  "hooks": {
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_name + \" failed: \" + (.tool_error // \"unknown\")' | xargs -I {} notify-send 'Ripperdoc' '{}'"
           }
         ]
       }

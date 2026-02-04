@@ -129,7 +129,7 @@ ripperdoc --yolo
 
 #### /cost
 
-显示 token 使用与预估费用。
+显示 token 使用与预估费用（支持时包含缓存读/写 token）。
 
 ```
 > /cost
@@ -165,10 +165,12 @@ ripperdoc --yolo
 
 #### /models
 
-列出并切换模型配置。
+管理模型配置（默认打开交互式 UI）。
 
 ```
 > /models
+> /models tui
+> /models list
 > /models use fast
 ```
 
@@ -196,12 +198,14 @@ ripperdoc --yolo
 
 #### /permissions
 
-管理权限规则。
+管理权限规则（默认打开交互式 UI）。
 
 ```
 > /permissions
+> /permissions tui
 > /permissions list
 > /permissions add allow Bash "npm test"
+> /permissions add ask Bash "terraform *"
 ```
 
 ### 扩展命令
@@ -235,18 +239,25 @@ ripperdoc --yolo
 
 #### /agents
 
-列出代理定义。
+管理代理定义与运行记录（默认打开交互式 UI）。
 
 ```
 > /agents
+> /agents tui
+> /agents list
+> /agents runs
+> /agents show <id>
+> /agents cancel <id>
 ```
 
 #### /tasks
 
-列出正在运行的子代理任务。
+管理 `run_in_background` 启动的后台 shell 任务。
 
 ```
 > /tasks
+> /tasks show <id>
+> /tasks kill <id>
 ```
 
 #### /mcp

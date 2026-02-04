@@ -105,12 +105,15 @@ class ProviderClient:
 Hooks 拦截生命周期事件：
 
 ```
-Event Flow:
-1. UserPromptSubmit → User sends message
-2. PreToolUse → Before tool execution
-3. PermissionRequest → When permission needed
-4. PostToolUse → After tool completes
-5. Stop → Agent finishes responding
+事件流：
+1. Setup → 仓库初始化/维护（每个项目首次启动）
+2. UserPromptSubmit → 用户发送消息
+3. PreToolUse → 工具执行前
+4. PermissionRequest → 需要权限时
+5. PostToolUse → 工具完成后
+6. PostToolUseFailure → 工具失败或超时后
+7. SubagentStart → 子代理启动前
+8. Stop → 代理完成响应
 ```
 
 ## 数据流

@@ -355,10 +355,13 @@ Available hook events:
 
 - `PreToolUse` - Before a tool is called
 - `PostToolUse` - After a tool completes
+- `PostToolUseFailure` - After a tool fails or times out
 - `UserPromptSubmit` - When user submits a prompt
 - `Stop` - When a stop is requested
+- `SubagentStart` - Before a subagent starts
 - `SubagentStop` - When a subagent stops
 - `PreCompact` - Before conversation compaction
+- `Setup` - Repository setup/maintenance (first startup per project)
 
 ## Session Management
 

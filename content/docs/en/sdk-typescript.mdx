@@ -319,6 +319,7 @@ Available hook events:
 
 - `PreToolUse` - Before a tool is called
 - `PostToolUse` - After a tool completes
+- `PostToolUseFailure` - After a tool fails or times out
 - `PreRead` - Before reading a file
 - `PostRead` - After reading a file
 - `PreEdit` - Before editing a file
@@ -332,6 +333,9 @@ Available hook events:
 - `OnTurnEnd` - When a turn ends
 - `OnQueryStart` - When a query starts
 - `OnQueryEnd` - When a query ends
+- `SubagentStart` - Before a subagent starts
+- `SubagentStop` - When a subagent stops
+- `Setup` - Repository setup/maintenance (first startup per project)
 
 ## RipperdocClient
 
@@ -741,6 +745,7 @@ interface HookConfig {
 type HookEvent =
   | 'PreToolUse'
   | 'PostToolUse'
+  | 'PostToolUseFailure'
   | 'PreRead'
   | 'PostRead'
   | 'PreEdit'
@@ -753,7 +758,10 @@ type HookEvent =
   | 'OnTurnStart'
   | 'OnTurnEnd'
   | 'OnQueryStart'
-  | 'OnQueryEnd';
+  | 'OnQueryEnd'
+  | 'SubagentStart'
+  | 'SubagentStop'
+  | 'Setup';
 ```
 
 ## SDK Features
