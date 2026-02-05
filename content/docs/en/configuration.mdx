@@ -274,14 +274,25 @@ Switch themes at runtime using the `/themes` command:
 
 ## Environment Variables
 
-API keys can be provided in the config file. Environment variables are optional and can be used instead.
+API keys can be provided in the config file. If you want to configure via env vars, Ripperdoc only reads `RIPPERDOC_*` variables (provider-specific vars like `OPENAI_API_KEY` are not used).
+
+### RIPPERDOC_ overrides
+
+These variables override config values in memory for the current session (they are not persisted to disk). If no profile exists, set at least `RIPPERDOC_MODEL`, `RIPPERDOC_PROTOCOL`, or `RIPPERDOC_BASE_URL` so Ripperdoc can build a profile.
 
 | Variable | Description |
 |----------|-------------|
-| `ANTHROPIC_API_KEY` | Optional if you set `api_key` in config |
-| `OPENAI_API_KEY` | Optional if you set `api_key` in config |
-| `DEEPSEEK_API_KEY` | Optional if you set `api_key` in config |
-| `GEMINI_API_KEY` | Optional if you set `api_key` in config |
+| `RIPPERDOC_BASE_URL` | API base URL override (`api_base`) |
+| `RIPPERDOC_API_KEY` | API key override (`api_key`) |
+| `RIPPERDOC_AUTH_TOKEN` | Auth token override (`auth_token`) |
+| `RIPPERDOC_MODEL` | Model name override |
+| `RIPPERDOC_SMALL_FAST_MODEL` | Model name for the `quick` pointer |
+| `RIPPERDOC_PROTOCOL` | Protocol family (`anthropic`, `openai_compatible`, `gemini`) |
+
+### Other environment variables
+
+| Variable | Description |
+|----------|-------------|
 | `RIPPERDOC_MAX_RETRIES` | Max API retries (default: 10) |
 | `RIPPERDOC_API_TIMEOUT` | API timeout in seconds (default: 120) |
 

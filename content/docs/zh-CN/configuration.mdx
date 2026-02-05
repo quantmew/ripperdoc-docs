@@ -280,34 +280,20 @@ Ripperdoc 内置主题系统，用于自定义 CLI 外观。在全局配置中�
 
 ## 环境变量
 
-API key 可以直接写在配置文件里。环境变量是可选的，也可以用来替代。
-
-### 提供商 API Keys
-
-| 变量 | 说明 |
-|----------|-------------|
-| `ANTHROPIC_API_KEY` | 如果已在配置里设置 `api_key` 则可选 |
-| `OPENAI_API_KEY` | 如果已在配置里设置 `api_key` 则可选 |
-| `DEEPSEEK_API_KEY` | 如果已在配置里设置 `api_key` 则可选 |
-| `GEMINI_API_KEY` | 如果已在配置里设置 `api_key` 则可选 |
+API key 可以直接写在配置文件里。如果使用环境变量配置，Ripperdoc 只读取 `RIPPERDOC_*`（不会读取 `OPENAI_API_KEY` 等提供商变量）。
 
 ### RIPPERDOC_ 环境变量
 
-这些变量允许完全在内存中创建模型配置，不依赖配置文件：
+这些变量会在当前会话中覆盖配置文件（不写入磁盘）。如果没有任何 profile，至少需要设置 `RIPPERDOC_MODEL`、`RIPPERDOC_PROTOCOL` 或 `RIPPERDOC_BASE_URL` 之一，才能构建模型配置。
 
 | 变量 | 说明 |
 |----------|-------------|
-| `RIPPERDOC_BASE_URL` | API 基础 URL（设置后将创建内存中的模型配置） |
-| `RIPPERDOC_API_KEY` | API 密钥 |
-| `RIPPERDOC_AUTH_TOKEN` | Bearer token 认证 |
-| `RIPPERDOC_MODEL` | 模型名称 |
+| `RIPPERDOC_BASE_URL` | API 基础 URL（`api_base` 覆盖） |
+| `RIPPERDOC_API_KEY` | API 密钥（`api_key` 覆盖） |
+| `RIPPERDOC_AUTH_TOKEN` | Auth token（`auth_token` 覆盖） |
+| `RIPPERDOC_MODEL` | 模型名称覆盖 |
 | `RIPPERDOC_SMALL_FAST_MODEL` | 快速模型名称（用于 quick 指针） |
 | `RIPPERDOC_PROTOCOL` | 协议类型（anthropic、openai_compatible、gemini） |
-
-当设置 `RIPPERDOC_BASE_URL` 时，系统会：
-1. 自动检测协议类型（基于 URL 和模型名称）
-2. 在内存中创建 ModelProfile（不写入配置文件）
-3. 使用环境变量中的认证信息
 
 ### 其他环境变量
 

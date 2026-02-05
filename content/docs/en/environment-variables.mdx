@@ -3,34 +3,11 @@ title: Environment Variables
 description: Complete list of environment variables
 ---
 
-Ripperdoc can be configured through environment variables. API keys are optional here if you set `api_key` in your config file.
+Ripperdoc can be configured through environment variables. For model and credential settings, Ripperdoc only reads `RIPPERDOC_*` variables (provider-specific env vars like `OPENAI_API_KEY` are ignored). If you already set `api_key` in your config, you can skip `RIPPERDOC_API_KEY`.
 
-## API Keys
+## RIPPERDOC_ Model Overrides
 
-If you already set `api_key` in your config, you can skip these variables.
-
-### Provider API Keys
-
-| Variable | Description |
-|----------|-------------|
-| `ANTHROPIC_API_KEY` | Anthropic Claude API key |
-| `OPENAI_API_KEY` | OpenAI API key |
-| `DEEPSEEK_API_KEY` | DeepSeek API key |
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `OPENROUTER_API_KEY` | OpenRouter API key |
-| `MISTRAL_API_KEY` | Mistral API key |
-
-### API Endpoints
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ANTHROPIC_API_URL` | Anthropic API base URL | `https://api.anthropic.com` |
-| `OPENAI_BASE_URL` | OpenAI API base URL | `https://api.openai.com/v1` |
-| `OPENAI_API_BASE` | Alternative OpenAI base URL | - |
-
-## RIPPERDOC_ In-Memory Model Config
-
-When `RIPPERDOC_BASE_URL` is set, Ripperdoc builds a ModelProfile in memory and does not write it to config files.
+Any `RIPPERDOC_*` variable overrides the corresponding config field in memory for the current session (no changes are written to disk). If no profile exists, set at least one of `RIPPERDOC_MODEL`, `RIPPERDOC_PROTOCOL`, or `RIPPERDOC_BASE_URL` so Ripperdoc can construct a profile. When `RIPPERDOC_PROTOCOL` is not set, it is inferred from the base URL and/or model name.
 
 | Variable | Description |
 |----------|-------------|
@@ -46,7 +23,7 @@ Example:
 ```bash
 RIPPERDOC_BASE_URL=https://api.example.com/v1
 RIPPERDOC_API_KEY=YOUR_API_KEY
-RIPPERDOC_MODEL=claude-sonnet-4-5-20250929
+RIPPERDOC_MODEL=gpt-4o-mini
 RIPPERDOC_PROTOCOL=openai_compatible
 ```
 
@@ -131,9 +108,11 @@ RIPPERDOC_PROTOCOL=openai_compatible
 ## Example .env File
 
 ```bash
-# API Keys
-ANTHROPIC_API_KEY=YOUR_ANTHROPIC_KEY
-OPENAI_API_KEY=YOUR_OPENAI_KEY
+# Model overrides (env-only)
+RIPPERDOC_BASE_URL=https://api.example.com/v1
+RIPPERDOC_API_KEY=YOUR_API_KEY
+RIPPERDOC_MODEL=gpt-4o-mini
+RIPPERDOC_PROTOCOL=openai_compatible
 
 # Timeouts
 RIPPERDOC_API_TIMEOUT=180
@@ -163,7 +142,10 @@ RIPPERDOC_LOG_LEVEL=WARNING
 ### From Shell
 
 ```bash
-export ANTHROPIC_API_KEY="YOUR_ANTHROPIC_KEY"
+export RIPPERDOC_BASE_URL="https://api.example.com/v1"
+export RIPPERDOC_API_KEY="YOUR_API_KEY"
+export RIPPERDOC_MODEL="gpt-4o-mini"
+export RIPPERDOC_PROTOCOL="openai_compatible"
 ripperdoc
 ```
 
@@ -172,7 +154,10 @@ ripperdoc
 Create a `.env` file in your project root:
 
 ```bash
-ANTHROPIC_API_KEY=YOUR_ANTHROPIC_KEY
+RIPPERDOC_BASE_URL=https://api.example.com/v1
+RIPPERDOC_API_KEY=YOUR_API_KEY
+RIPPERDOC_MODEL=gpt-4o-mini
+RIPPERDOC_PROTOCOL=openai_compatible
 ```
 
 Then use a tool like `direnv` or source it manually:
@@ -186,7 +171,10 @@ ripperdoc
 
 ```python
 import os
-os.environ["ANTHROPIC_API_KEY"] = "YOUR_ANTHROPIC_KEY"
+os.environ["RIPPERDOC_BASE_URL"] = "https://api.example.com/v1"
+os.environ["RIPPERDOC_API_KEY"] = "YOUR_API_KEY"
+os.environ["RIPPERDOC_MODEL"] = "gpt-4o-mini"
+os.environ["RIPPERDOC_PROTOCOL"] = "openai_compatible"
 
 from ripperdoc.sdk import query
 ```

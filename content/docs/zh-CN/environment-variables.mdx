@@ -3,45 +3,20 @@ title: 环境变量
 description: 环境变量完整列表
 ---
 
-Ripperdoc 可通过环境变量进行配置。如果你在配置文件里设置了 `api_key`，这里的 API key 环境变量就是可选的。
+Ripperdoc 可通过环境变量进行配置。模型与鉴权相关设置只读取 `RIPPERDOC_*`（不会读取 `OPENAI_API_KEY` 等提供商变量）。如果配置文件里已设置 `api_key`，可跳过 `RIPPERDOC_API_KEY`。
 
-## API Keys
+## RIPPERDOC_ 环境变量（会话覆盖）
 
-如果已在配置文件里设置 `api_key`，可以跳过这些变量。
-
-### RIPPERDOC_ 环境变量（内存配置）
-
-这些变量允许完全通过环境变量配置模型，无需修改配置文件：
+这些变量会在当前会话中覆盖配置文件（不写入磁盘）。如果没有任何 profile，至少需要设置 `RIPPERDOC_MODEL`、`RIPPERDOC_PROTOCOL` 或 `RIPPERDOC_BASE_URL` 之一，才能构建模型配置。若未显式设置 `RIPPERDOC_PROTOCOL`，会根据 base URL 和/或模型名称自动推断。
 
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
 | `RIPPERDOC_BASE_URL` | API 基础 URL | - |
 | `RIPPERDOC_API_KEY` | API 密钥 | - |
-| `RIPPERDOC_AUTH_TOKEN` | Bearer token 认证 | - |
+| `RIPPERDOC_AUTH_TOKEN` | Auth token（可替代 API key） | - |
 | `RIPPERDOC_MODEL` | 模型名称（main 指针） | - |
 | `RIPPERDOC_SMALL_FAST_MODEL` | 快速模型名称（quick 指针） | - |
 | `RIPPERDOC_PROTOCOL` | 协议类型 | 自动检测 |
-
-当设置 `RIPPERDOC_BASE_URL` 时，系统会在内存中创建 ModelProfile，不写入配置文件。协议类型可以显式指定，或根据 URL 和模型名称自动推断。
-
-### 提供商 API Keys
-
-| 变量 | 说明 |
-|----------|-------------|
-| `ANTHROPIC_API_KEY` | Anthropic Claude API key |
-| `OPENAI_API_KEY` | OpenAI API key |
-| `DEEPSEEK_API_KEY` | DeepSeek API key |
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `OPENROUTER_API_KEY` | OpenRouter API key |
-| `MISTRAL_API_KEY` | Mistral API key |
-
-### API 端点
-
-| 变量 | 说明 | 默认值 |
-|----------|-------------|---------|
-| `ANTHROPIC_API_URL` | Anthropic API base URL | `https://api.anthropic.com` |
-| `OPENAI_BASE_URL` | OpenAI API base URL | `https://api.openai.com/v1` |
-| `OPENAI_API_BASE` | 备用 OpenAI base URL | - |
 
 ## 行为设置
 
@@ -123,12 +98,12 @@ Ripperdoc 可通过环境变量进行配置。如果你在配置文件里设置�
 
 ## .env 示例
 
-### 使用提供商 API Keys
-
 ```bash
-# API Keys
-ANTHROPIC_API_KEY=YOUR_ANTHROPIC_KEY
-OPENAI_API_KEY=YOUR_OPENAI_KEY
+# 模型覆盖（仅环境变量）
+RIPPERDOC_BASE_URL=https://api.example.com/v1
+RIPPERDOC_API_KEY=YOUR_API_KEY
+RIPPERDOC_MODEL=gpt-4o-mini
+RIPPERDOC_PROTOCOL=openai_compatible
 
 # Timeouts
 RIPPERDOC_API_TIMEOUT=180
@@ -159,15 +134,16 @@ RIPPERDOC_LOG_LEVEL=WARNING
 # 使用自定义 API 端点
 RIPPERDOC_BASE_URL=https://api.example.com/v1
 RIPPERDOC_API_KEY=YOUR_API_KEY
-RIPPERDOC_MODEL=claude-sonnet-4-5-20250929
+RIPPERDOC_MODEL=gpt-4o-mini
 
 # 或使用 Bearer token 认证
 RIPPERDOC_BASE_URL=https://api.example.com/v1
 RIPPERDOC_AUTH_TOKEN=YOUR_BEARER_TOKEN
+RIPPERDOC_MODEL=gpt-4o-mini
 RIPPERDOC_PROTOCOL=openai_compatible
 
 # 指定不同的 quick 模型
-RIPPERDOC_SMALL_FAST_MODEL=haiku-model-name
+RIPPERDOC_SMALL_FAST_MODEL=fast-model-name
 ```
 
 ## 加载环境变量
@@ -175,7 +151,10 @@ RIPPERDOC_SMALL_FAST_MODEL=haiku-model-name
 ### 从 Shell 加载
 
 ```bash
-export ANTHROPIC_API_KEY="YOUR_ANTHROPIC_KEY"
+export RIPPERDOC_BASE_URL="https://api.example.com/v1"
+export RIPPERDOC_API_KEY="YOUR_API_KEY"
+export RIPPERDOC_MODEL="gpt-4o-mini"
+export RIPPERDOC_PROTOCOL="openai_compatible"
 ripperdoc
 ```
 
@@ -184,7 +163,10 @@ ripperdoc
 在项目根目录创建 `.env` 文件：
 
 ```bash
-ANTHROPIC_API_KEY=YOUR_ANTHROPIC_KEY
+RIPPERDOC_BASE_URL=https://api.example.com/v1
+RIPPERDOC_API_KEY=YOUR_API_KEY
+RIPPERDOC_MODEL=gpt-4o-mini
+RIPPERDOC_PROTOCOL=openai_compatible
 ```
 
 然后用 `direnv` 或手动 source：
@@ -198,7 +180,10 @@ ripperdoc
 
 ```python
 import os
-os.environ["ANTHROPIC_API_KEY"] = "YOUR_ANTHROPIC_KEY"
+os.environ["RIPPERDOC_BASE_URL"] = "https://api.example.com/v1"
+os.environ["RIPPERDOC_API_KEY"] = "YOUR_API_KEY"
+os.environ["RIPPERDOC_MODEL"] = "gpt-4o-mini"
+os.environ["RIPPERDOC_PROTOCOL"] = "openai_compatible"
 
 from ripperdoc.sdk import query
 ```
