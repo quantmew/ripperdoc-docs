@@ -13,11 +13,7 @@ Ripperdoc provides both CLI options for startup configuration and slash commands
 ripperdoc [OPTIONS] [COMMAND]
 ```
 
-The command also has an alias `rd`:
 
-```bash
-rd [OPTIONS]
-```
 
 ### Startup Options
 
@@ -65,7 +61,7 @@ ripperdoc
 
 # Continue last session
 ripperdoc --continue
-rd -c
+ripperdoc -c
 
 # Non-interactive single prompt
 ripperdoc -p "Explain this codebase"
@@ -151,6 +147,16 @@ Interactively select and resume a previous session.
 ```
 > /resume
 ```
+
+#### /fork
+
+Fork the current conversation into a new session, preserving the original.
+
+```
+> /fork
+```
+
+This creates a new session from the current conversation state, allowing you to explore different paths without losing the original context.
 
 ### Configuration Commands
 
@@ -262,10 +268,14 @@ Manage background shell tasks started with `run_in_background`.
 
 #### /mcp
 
-Manage MCP server connections.
+Manage MCP server connections and view stderr logs.
 
 ```
-> /mcp
+> /mcp                        # Show connected servers
+> /mcp logs                   # List log targets
+> /mcp logs <server>          # View recent stderr logs
+> /mcp logs <server> -f       # Follow log output
+> /mcp logs <server> -n 100   # View last 100 lines
 ```
 
 ### Task Management
@@ -305,6 +315,31 @@ View current context information.
 > /context
 ```
 
+### Output Commands
+
+#### /output-language
+
+Control the language of assistant responses.
+
+```
+> /output-language           # Show current language setting
+> /output-language zh-CN     # Set output to Chinese
+> /output-language en        # Set output to English
+> /output-language auto      # Follow user's language
+```
+
+#### /output-style
+
+Select the response style for assistant messages.
+
+```
+> /output-style              # Interactive style selection
+> /output-style list         # List available styles
+> /output-style default      # Use default style
+```
+
+Available styles vary by configuration but typically include: `default`, `explanatory`, `learning`, etc.
+
 ### Diagnostics
 
 #### /doctor
@@ -315,9 +350,27 @@ Run diagnostics to check configuration and connectivity.
 > /doctor
 ```
 
-## Custom Commands
+### Custom Commands Management
 
-Define custom commands in `.ripperdoc/commands.json`:
+#### /commands
+
+Manage custom slash commands with interactive TUI.
+
+```
+> /commands                  # Open interactive commands UI
+> /commands list             # List custom commands
+> /commands add <name>       # Create a new command
+> /commands edit <name>      # Edit an existing command
+> /commands delete <name>    # Delete a command
+```
+
+Commands can be stored in:
+- `.ripperdoc/commands/` - Project-level (shared via git)
+- `~/.ripperdoc/commands/` - User-level (all projects)
+
+## Legacy Custom Commands
+
+Define simple custom commands in `.ripperdoc/commands.json`:
 
 ```json
 {

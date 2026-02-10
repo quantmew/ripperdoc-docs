@@ -13,12 +13,6 @@ Ripperdoc 提供 CLI 选项用于启动配置，以及 slash 命令用于运行�
 ripperdoc [选项] [命令]
 ```
 
-该命令也有别名 `rd`：
-
-```bash
-rd [选项]
-```
-
 ### 启动选项
 
 | 选项 | 说明 |
@@ -65,7 +59,7 @@ ripperdoc
 
 # 继续上次会话
 ripperdoc --continue
-rd -c
+ripperdoc -c
 
 # 非交互式单次提示
 ripperdoc -p "解释这个代码库"
@@ -151,6 +145,16 @@ ripperdoc --yolo
 ```
 > /resume
 ```
+
+#### /fork
+
+将当前对话派生为新会话，保留原始会话。
+
+```
+> /fork
+```
+
+这会从当前对话状态创建一个新会话，允许你探索不同方向而不丢失原始上下文。
 
 ### 配置命令
 
@@ -262,10 +266,14 @@ ripperdoc --yolo
 
 #### /mcp
 
-管理 MCP 服务器连接。
+管理 MCP 服务器连接及查看 stderr 日志。
 
 ```
-> /mcp
+> /mcp                        # 显示已连接的服务器
+> /mcp logs                   # 列出日志目标
+> /mcp logs <server>          # 查看最近的 stderr 日志
+> /mcp logs <server> -f       # 实时跟踪日志输出
+> /mcp logs <server> -n 100   # 查看最近 100 行
 ```
 
 ### 任务管理
@@ -305,6 +313,31 @@ ripperdoc --yolo
 > /context
 ```
 
+### 输出命令
+
+#### /output-language
+
+控制助手回复的语言。
+
+```
+> /output-language           # 显示当前语言设置
+> /output-language zh-CN     # 设置输出为中文
+> /output-language en        # 设置输出为英文
+> /output-language auto      # 跟随用户的语言
+```
+
+#### /output-style
+
+选择助手消息的回复风格。
+
+```
+> /output-style              # 交互式风格选择
+> /output-style list         # 列出可用风格
+> /output-style default      # 使用默认风格
+```
+
+可用风格因配置而异，通常包括：`default`、`explanatory`、`learning` 等。
+
 ### 诊断
 
 #### /doctor
@@ -315,9 +348,27 @@ ripperdoc --yolo
 > /doctor
 ```
 
-## 自定义命令
+### 自定义命令管理
 
-在 `.ripperdoc/commands.json` 中定义自定义命令：
+#### /commands
+
+使用交互式 TUI 管理自定义 slash 命令。
+
+```
+> /commands                  # 打开交互式命令 UI
+> /commands list             # 列出自定义命令
+> /commands add <name>       # 创建新命令
+> /commands edit <name>      # 编辑现有命令
+> /commands delete <name>    # 删除命令
+```
+
+命令可存储于：
+- `.ripperdoc/commands/` - 项目级（通过 git 共享）
+- `~/.ripperdoc/commands/` - 用户级（所有项目）
+
+## 旧版自定义命令
+
+在 `.ripperdoc/commands.json` 中定义简单自定义命令：
 
 ```json
 {
