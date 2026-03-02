@@ -20,6 +20,17 @@ When a permission prompt appears, you can:
 - **a/always**: Always allow this type of operation
 - **Esc**: Deny the operation
 
+The permission prompt interface uses Rich Panel for better visual consistency. For Bash tools, it displays complete command details (including timeout, sandbox, etc.) for security review.
+
+## Session-Level Permissions
+
+In addition to persistent rules in configuration files, Ripperdoc also supports session-level permission management:
+
+- **`session_allowed_tools`**: List of tools allowed during the session
+- **`session_tool_rules`**: Tool rules for the session (e.g., bash command patterns)
+
+These settings are cleared when the session ends and are not persisted. When you choose the "2/s" (allow for session) option, the corresponding tool or command rules are added to session-level permissions.
+
 ## YOLO Mode
 
 Skip all permission prompts with YOLO mode:
@@ -189,6 +200,41 @@ Use `.ripperdoc/config.local.json` for local-only settings that shouldn't be com
 ```
 
 Add `.ripperdoc/config.local.json` to your `.gitignore`.
+
+## Tool Custom Permission Checks
+
+Tools can implement custom `check_permissions` methods to override default permission behavior. This method receives the tool input and permission context, returning a `PermissionDecision` object.
+
+```python
+from ripperdoc.utils.permissions import PermissionDecision, ToolRule
+
+def check_permissions(self, parsed_input, context):
+    """Custom permission check logic.
+
+    Args:
+        parsed_input: Parsed tool input
+        context: Dictionary with allowed_rules, denied_rules, allowed_working_directories
+
+    Returns:
+        PermissionDecision object with behavior, message, rule_suggestions
+    """
+    allowed_rules = context.get("allowed_rules", set())
+    denied_rules = context.get("denied_rules", set())
+
+    # Return decision
+    return PermissionDecision(
+        behavior="allow",  # allow, deny, ask, passthrough
+        message="Custom permission check result",
+        rule_suggestions=[ToolRule(tool_name="ToolName", rule_content="pattern")],
+        updated_input=parsed_input  # Optional: modified input
+    )
+```
+
+Supported behavior types:
+- `allow`: Auto-approve the operation
+- `deny`: Auto-deny the operation
+- `ask`: Ask user for confirmation
+- `passthrough`: Use default behavior (typically ask)
 
 ## Best Practices
 

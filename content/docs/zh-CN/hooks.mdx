@@ -22,6 +22,8 @@ Hooks 允许你在 Ripperdoc 生命周期的不同阶段执行自定义脚本。
 | `SessionStart` | 会话开始或恢复时 |
 | `SessionEnd` | 会话结束时 |
 | `Setup` | 仓库初始化/维护（每个项目首次启动） |
+| `WorktreeCreate` | 创建 worktree 前 |
+| `WorktreeRemove` | 删除 worktree 前 |
 
 ## 配置文件
 
@@ -288,6 +290,7 @@ Setup 会在每个项目首次 `SessionStart` 且 `source="startup"` 时触发�
 {
   "hook_event_name": "Notification",
   "message": "Permission required",
+  "title": "Optional title",
   "notification_type": "permission_prompt"
 }
 ```

@@ -22,6 +22,8 @@ Hooks let you execute custom scripts at various points in Ripperdoc's lifecycle.
 | `SessionStart` | When a session begins or resumes |
 | `SessionEnd` | When a session ends |
 | `Setup` | Repository setup/maintenance (first startup per project) |
+| `WorktreeCreate` | Before creating a worktree |
+| `WorktreeRemove` | Before removing a worktree |
 
 ## Configuration Files
 
@@ -288,6 +290,7 @@ Setup runs once per project on the first SessionStart with `source: "startup"`.
 {
   "hook_event_name": "Notification",
   "message": "Permission required",
+  "title": "Optional title",
   "notification_type": "permission_prompt"
 }
 ```

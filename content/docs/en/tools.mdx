@@ -3,7 +3,7 @@ title: Tools
 description: Built-in tools available in Ripperdoc
 ---
 
-Ripperdoc comes with built-in tools that enable the AI to interact with your codebase and system.
+Ripperdoc comes with 30+ built-in tools that enable the AI to interact with your codebase and system.
 
 ## File Operations
 
@@ -189,6 +189,19 @@ Mark complete: #1
 ### EnterPlanMode / ExitPlanMode
 
 Enter planning mode to design implementation before writing code.
+
+### EnterWorktree
+
+Create an isolated git worktree and switch the session into it for safe experimentation.
+
+```
+Create worktree: my-feature
+```
+
+Features:
+- Creates isolated worktrees for safe experimentation
+- Automatic naming if not provided
+- Requires git repository or WorktreeCreate/WorktreeRemove hooks
 
 ## Interaction
 

@@ -190,6 +190,19 @@ Mark complete: #1
 
 进入规划模式，在写代码前先设计实现方案。
 
+### EnterWorktree
+
+创建一个隔离的 git worktree 并将会话切换到其中，以便安全地进行实验。
+
+```
+Create worktree: my-feature
+```
+
+特性：
+- 为安全实验创建隔离的 worktree
+- 如未提供名称则自动命名
+- 需要 git 仓库或 WorktreeCreate/WorktreeRemove hooks
+
 ## 交互
 
 ### AskUserQuestion

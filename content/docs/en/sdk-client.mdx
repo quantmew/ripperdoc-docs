@@ -314,7 +314,7 @@ options = RipperdocAgentOptions(
     mcp_servers: Optional[Dict[str, McpServerConfig]] = None,
 
     # Programmatic agents
-    agents: Optional[Dict[str, AgentConfig]] = None,
+    agents: Optional[Dict[str, AgentDefinition]] = None,
 
     # Programmatic hooks
     hooks: Optional[Dict[str, List[HookMatcher]]] = None,
@@ -351,7 +351,7 @@ options = RipperdocAgentOptions(
 | `fork_session` | `bool` | `False` | Create branch when resuming |
 | `permission_checker` | `Callable` | `None` | Custom permission checker |
 | `mcp_servers` | `Dict[str, McpServerConfig]` | `None` | MCP server configurations |
-| `agents` | `Dict[str, AgentConfig]` | `None` | Programmatic agents |
+| `agents` | `Dict[str, AgentDefinition]` | `None` | Programmatic agents |
 | `hooks` | `Dict[str, List[HookMatcher]]` | `None` | Programmatic hooks |
 | `env` | `Dict[str, str]` | `None` | Environment variables |
 | `cli_path` | `str` | `None` | Path to CLI executable |
@@ -377,26 +377,139 @@ config = McpServerConfig(
 )
 ```
 
-## AgentConfig
+## AgentDefinition
 
 Programmatic configuration for a subagent.
 
 ### Constructor
 
 ```python
-from ripperdoc_agent_sdk import AgentConfig
+from ripperdoc_agent_sdk import AgentDefinition
 
-agent = AgentConfig(
+agent = AgentDefinition(
     description: str,               # Description of when to use this agent
     prompt: str,                    # System prompt for the agent
     tools: Optional[List[str]] = None,  # Tools available (["*"] for all)
-    model: Optional[str] = None,    # Model: "sonnet", "opus", "haiku", or None to inherit
-    color: Optional[str] = None,    # Display color
-    fork_context: bool = False,     # Whether to fork context
+    model: Optional[Literal["sonnet", "opus", "haiku", "inherit"]] = None,
 )
 ```
 
-## HookMatcher
+## Hook Types
+
+### HookEvent
+
+Available hook events (v0.0.4+):
+
+```python
+from ripperdoc_agent_sdk import HookEvent
+
+HookEvent = (
+    Literal["PreToolUse"]
+    | Literal["PostToolUse"]
+    | Literal["PostToolUseFailure"]
+    | Literal["UserPromptSubmit"]
+    | Literal["Stop"]
+    | Literal["SubagentStop"]
+    | Literal["PreCompact"]
+    | Literal["Notification"]
+    | Literal["SubagentStart"]
+    | Literal["PermissionRequest"]
+)
+```
+
+### Hook Input Types
+
+#### PreToolUseHookInput
+```python
+class PreToolUseHookInput(BaseHookInput):
+    hook_event_name: Literal["PreToolUse"]
+    tool_name: str
+    tool_input: dict[str, Any]
+    tool_use_id: str              # Unique tool call identifier
+```
+
+#### PostToolUseHookInput
+```python
+class PostToolUseHookInput(BaseHookInput):
+    hook_event_name: Literal["PostToolUse"]
+    tool_name: str
+    tool_input: dict[str, Any]
+    tool_response: Any            # Tool's response/output
+    tool_use_id: str
+```
+
+#### PostToolUseFailureHookInput (v0.0.4+)
+```python
+class PostToolUseFailureHookInput(BaseHookInput):
+    hook_event_name: Literal["PostToolUseFailure"]
+    tool_name: str
+    tool_input: dict[str, Any]
+    tool_use_id: str
+    error: str                     # Error message
+    is_interrupt: NotRequired[bool]  # True if user interrupted
+```
+
+#### NotificationHookInput (v0.0.4+)
+```python
+class NotificationHookInput(BaseHookInput):
+    hook_event_name: Literal["Notification"]
+    message: str                   # Notification message
+    title: NotRequired[str]        # Optional title
+    notification_type: str         # Type identifier
+```
+
+#### SubagentStartHookInput (v0.0.4+)
+```python
+class SubagentStartHookInput(BaseHookInput):
+    hook_event_name: Literal["SubagentStart"]
+    agent_id: str                  # Unique agent identifier
+    agent_type: str                # Agent type name
+```
+
+#### SubagentStopHookInput
+```python
+class SubagentStopHookInput(BaseHookInput):
+    hook_event_name: Literal["SubagentStop"]
+    stop_hook_active: bool
+    agent_id: str                  # Agent identifier
+    agent_transcript_path: str     # Path to agent transcript
+    agent_type: str                # Agent type name
+```
+
+#### PermissionRequestHookInput (v0.0.4+)
+```python
+class PermissionRequestHookInput(BaseHookInput):
+    hook_event_name: Literal["PermissionRequest"]
+    tool_name: str
+    tool_input: dict[str, Any]
+    permission_suggestions: NotRequired[list[Any]]  # Suggested rules
+```
+
+### Hook Output Types
+
+#### PreToolUseHookSpecificOutput
+```python
+class PreToolUseHookSpecificOutput(TypedDict):
+    hookEventName: Literal["PreToolUse"]
+    permissionDecision: NotRequired[Literal["allow", "deny", "ask"]]
+    permissionDecisionReason: NotRequired[str]
+    updatedInput: NotRequired[dict[str, Any]]
+    additionalContext: NotRequired[str]
+```
+
+#### PostToolUseFailureHookSpecificOutput (v0.0.4+)
+```python
+class PostToolUseFailureHookSpecificOutput(TypedDict):
+    hookEventName: Literal["PostToolUseFailure"]
+    additionalContext: NotRequired[str]  # Context to add to conversation
+```
+
+#### PermissionRequestHookSpecificOutput (v0.0.4+)
+```python
+class PermissionRequestHookSpecificOutput(TypedDict):
+    hookEventName: Literal["PermissionRequest"]
+    decision: dict[str, Any]       # Permission decision object
+```
 
 Matcher configuration for a programmatic hook.
 

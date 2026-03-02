@@ -113,7 +113,12 @@ Event Flow:
 5. PostToolUse → After tool completes
 6. PostToolUseFailure → After tool fails or times out
 7. SubagentStart → Before a subagent starts
-8. Stop → Agent finishes responding
+8. SubagentStop → When a subagent completes
+9. Stop → Agent finishes responding
+10. PreCompact → Before context compaction
+11. SessionStart/SessionEnd → Session lifecycle
+12. Notification → Status notifications
+13. WorktreeCreate/WorktreeRemove → Worktree lifecycle
 ```
 
 ## Data Flow
@@ -217,7 +222,7 @@ Tool Call (from LLM)
 
 ### `ripperdoc/tools/`
 
-23 tool implementations for file operations, search, execution, etc.
+30+ tool implementations for file operations, search, execution, task management, team coordination, etc.
 
 ### `ripperdoc/utils/`
 

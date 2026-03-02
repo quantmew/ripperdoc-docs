@@ -302,18 +302,18 @@ async for message in query(
 Define custom subagents programmatically:
 
 ```python
-from ripperdoc_agent_sdk import RipperdocAgentOptions, AgentConfig
+from ripperdoc_agent_sdk import RipperdocAgentOptions, AgentDefinition
 
 options = RipperdocAgentOptions(
     agents={
-        "code-reviewer": AgentConfig(
+        "code-reviewer": AgentDefinition(
             description="Review code for security issues and best practices",
             prompt="You are a security expert. Focus on identifying vulnerabilities, "
                    "injection attacks, and adherence to security best practices.",
             tools=["Read", "Grep", "Glob"],
             model="sonnet"
         ),
-        "test-writer": AgentConfig(
+        "test-writer": AgentDefinition(
             description="Write comprehensive tests for code",
             prompt="You are a testing specialist. Write thorough unit tests "
                    "with good coverage and edge cases.",
@@ -339,11 +339,35 @@ async def sanitize_input(event, input_data):
     # Modify tool input before execution
     return {"updated_input": sanitize(input_data)}
 
+async def handle_failure(event, input_data):
+    print(f"Tool {input_data['tool_name']} failed: {input_data['error']}")
+    return {"additionalContext": "Consider trying a different approach"}
+
+async def handle_notification(event, input_data):
+    print(f"Notification: {input_data['message']}")
+    return {}
+
+async def handle_permission_request(event, input_data):
+    print(f"Permission requested for {input_data['tool_name']}")
+    # Auto-approve specific tools
+    if input_data['tool_name'] == 'Read':
+        return {"decision": {"behavior": "allow"}}
+    return {}
+
 options = RipperdocAgentOptions(
     hooks={
         "PreToolUse": [
             HookMatcher(callback=log_tool_use, tool_pattern="*"),
             HookMatcher(callback=sanitize_input, tool_pattern="Bash*")
+        ],
+        "PostToolUseFailure": [
+            HookMatcher(callback=handle_failure, tool_pattern="*")
+        ],
+        "Notification": [
+            HookMatcher(callback=handle_notification, notification_type="*")
+        ],
+        "PermissionRequest": [
+            HookMatcher(callback=handle_permission_request, tool_pattern="*")
         ]
     }
 )
@@ -351,17 +375,22 @@ options = RipperdocAgentOptions(
 
 ### Hook Events
 
-Available hook events:
+**Note**: As of v0.0.4, the Python SDK supports most hook events. The following events are **not yet supported**:
+- `SessionStart`, `SessionEnd`
+- `Setup`
 
-- `PreToolUse` - Before a tool is called
-- `PostToolUse` - After a tool completes
-- `PostToolUseFailure` - After a tool fails or times out
+Available hook events in the Python SDK v0.0.4+:
+
+- `PreToolUse` - Before a tool is called (includes `tool_use_id`)
+- `PostToolUse` - After a tool completes (includes `tool_use_id`, `tool_response`)
+- `PostToolUseFailure` - After a tool fails (includes `error`, `is_interrupt`)
 - `UserPromptSubmit` - When user submits a prompt
 - `Stop` - When a stop is requested
-- `SubagentStart` - Before a subagent starts
-- `SubagentStop` - When a subagent stops
+- `SubagentStart` - Before a subagent starts (includes `agent_id`, `agent_type`)
+- `SubagentStop` - When a subagent stops (includes `agent_id`, `agent_transcript_path`, `agent_type`)
 - `PreCompact` - Before conversation compaction
-- `Setup` - Repository setup/maintenance (first startup per project)
+- `Notification` - For status notifications (includes `message`, `title`, `notification_type`)
+- `PermissionRequest` - When permission dialog is shown (includes `permission_suggestions`)
 
 ## Session Management
 
