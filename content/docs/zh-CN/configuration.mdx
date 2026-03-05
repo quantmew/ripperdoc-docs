@@ -106,6 +106,20 @@ ripperdoc --model reasoner
 | `openai_compatible` | `api_base`, `model` | 任意 OpenAI 兼容 API |
 | `anthropic` | `api_key` | Anthropic Claude |
 | `gemini` | `api_key` | Google Gemini |
+| `volcengine` | `api_key`, `model` | 火山引擎 Seed 2.0 |
+| `aliyun` | `api_key`, `model` | 阿里云 |
+| `stepfun` | `api_key`, `model` | 阶跃星辰 |
+| `nvidia` | `api_key`, `model` | NVIDIA API 端点 |
+
+### Provider 预设模式
+
+为简化模型配置，你可以使用 provider 预设模式：
+
+```bash
+ripperdoc --model claude-sonnet  # 自动从模型名称检测 provider
+```
+
+系统会根据模型名称自动检测正确的 provider 和配置。
 
 ### 认证选项
 

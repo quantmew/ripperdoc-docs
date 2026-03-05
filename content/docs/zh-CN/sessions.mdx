@@ -108,7 +108,10 @@ ripperdoc -c
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
 | `RIPPERDOC_AUTO_COMPACT` | 启用自动压缩 | `true` |
+| `RIPPERDOC_AUTOCOMPACT_PCT_OVERRIDE` | 覆盖自动压缩百分比阈值 | - |
 | `RIPPERDOC_CONTEXT_TOKENS` | 上下文窗口大小限制 | 模型默认值 |
+| `RIPPERDOC_RESUME_REPLAY_MAX_MESSAGES` | 恢复会话时最大重放消息数（-1 全部，0 跳过） | `120` |
+| `RIPPERDOC_REPLAY_USER_MESSAGES` | 恢复会话时重放用户消息 | `false` |
 
 或在 `~/.ripperdoc.json` 中配置：
 
@@ -145,3 +148,21 @@ ripperdoc -c
 3. **中断后用 `-c` 或 `--continue`**：继续之前的工作
 4. **主动压缩**：响应变慢时用 `/compact`
 5. **用 `/resume` 浏览历史**：交互式查找特定的历史会话
+
+## 远程控制桥接
+
+Ripperdoc v0.5.1+ 支持用于分布式代理架构的远程控制桥接：
+
+```bash
+# 启动远程工作会话
+ripperdoc remote-control --session-token YOUR_TOKEN
+
+# 恢复会话时重放用户消息
+ripperdoc --replay-user-messages --continue
+```
+
+特性：
+- 显式 ACK 协议确保可靠消息传递
+- 长运行会话的会话令牌刷新
+- 通过 `--sdk-url` 选项实现远程 WebSocket SDK 传输
+- 分布式代理协调

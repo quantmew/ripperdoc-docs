@@ -26,6 +26,11 @@ ripperdoc [OPTIONS] [COMMAND]
 | `--verbose` | Enable verbose output |
 | `--model NAME` | Use a specific model profile |
 | `-c`, `--continue` | Continue the most recent session |
+| `--agent NAME` | Select a custom session agent |
+| `--agents` | Open custom session agents management |
+| `--debug` | Enable debug mode |
+| `--disable-slash-commands` | Disable slash commands |
+| `--replay-user-messages` | Replay user messages when resuming sessions |
 
 ### Prompt Options
 
@@ -264,6 +269,30 @@ Manage background shell tasks started with `run_in_background`.
 > /tasks
 > /tasks show <id>
 > /tasks kill <id>
+```
+
+#### /agents
+
+Manage custom session agents and agent definitions (interactive UI by default).
+
+```
+> /agents                  # Open agents management UI
+> /agents tui
+> /agents list
+> /agents use <name>       # Select an agent for current session
+```
+
+#### /plugins
+
+Manage plugins with marketplace support (interactive UI by default).
+
+```
+> /plugins                 # Open plugins management UI
+> /plugins tui
+> /plugins list
+> /plugins install <name>  # Install a plugin
+> /plugins uninstall <name> # Remove a plugin
+> /plugins marketplace     # Browse available plugins
 ```
 
 #### /mcp

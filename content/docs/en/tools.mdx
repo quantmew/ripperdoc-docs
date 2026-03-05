@@ -235,6 +235,26 @@ Load skill: pptx
 
 Find relevant tools for a task.
 
+### Memory
+
+Persistent memory file tool for storing and retrieving knowledge across sessions.
+
+```
+View memory: patterns
+Create memory: patterns.md with content
+Replace in memory: patterns old_string with new_string
+Insert in memory: patterns at line 10
+Delete memory: old-pattern
+Rename memory: old-name to new-name
+```
+
+Features:
+- Persistent storage in session memory directory
+- Support for create/replace/insert/delete/rename operations
+- Line-based insertion and replacement
+- Optional view_range for reading specific line ranges
+- Auto-memory system with permission bypass for context retention
+
 ## MCP Integration
 
 ### ListMcpServers

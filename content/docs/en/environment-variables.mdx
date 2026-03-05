@@ -44,6 +44,7 @@ RIPPERDOC_PROTOCOL=openai_compatible
 |----------|-------------|---------|
 | `RIPPERDOC_CONTEXT_TOKENS` | Context window size limit | Model default |
 | `RIPPERDOC_AUTO_COMPACT` | Enable automatic compaction | `true` |
+| `RIPPERDOC_AUTOCOMPACT_PCT_OVERRIDE` | Override auto-compaction percentage threshold | - |
 | `RIPPERDOC_MAX_QUERY_ITERATIONS` | Maximum query loop iterations | `1024` |
 | `RIPPERDOC_MESSAGE_WARNING_THRESHOLD` | Message count for warning | `500` |
 | `RIPPERDOC_MESSAGE_CRITICAL_THRESHOLD` | Message count for critical warning | `1000` |
@@ -80,18 +81,31 @@ RIPPERDOC_PROTOCOL=openai_compatible
 |----------|-------------|---------|
 | `RIPPERDOC_LSP_TIMEOUT` | LSP request timeout (seconds) | `20` |
 
+### Stdio Mode
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_EXIT_AFTER_STOP_DELAY` | Auto-exit after idle delay in stdio mode (seconds) | - |
+
 ### MCP Settings
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `RIPPERDOC_MCP_MAX_OUTPUT_TOKENS` | Max MCP output tokens | `50000` |
 | `RIPPERDOC_MCP_WARNING_TOKENS` | MCP warning threshold | `40000` |
+| `RIPPERDOC_ENABLE_TOOL_SEARCH` | Enable deferred MCP tool search (`true`/`false`) | - |
 
 ## Agent Settings
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `RIPPERDOC_AGENT_RUN_TTL_SEC` | Agent run time-to-live (seconds) | `3600` |
+
+## Storage Diagnostics
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RIPPERDOC_STORAGE_DIAGNOSTICS` | Enable storage env override diagnostics | `false` |
 
 ## Logging
 
@@ -114,6 +128,18 @@ RIPPERDOC_BASE_URL=https://api.example.com/v1
 RIPPERDOC_API_KEY=YOUR_API_KEY
 RIPPERDOC_MODEL=gpt-4o-mini
 RIPPERDOC_PROTOCOL=openai_compatible
+
+# Auto-compaction override
+RIPPERDOC_AUTOCOMPACT_PCT_OVERRIDE=80
+
+# Stdio mode auto-exit
+RIPPERDOC_EXIT_AFTER_STOP_DELAY=300
+
+# MCP tool search control
+RIPPERDOC_ENABLE_TOOL_SEARCH=true
+
+# Storage diagnostics
+RIPPERDOC_STORAGE_DIAGNOSTICS=true
 
 # Timeouts
 RIPPERDOC_API_TIMEOUT=180

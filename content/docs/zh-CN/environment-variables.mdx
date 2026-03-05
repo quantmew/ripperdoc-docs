@@ -35,6 +35,7 @@ Ripperdoc 可通过环境变量进行配置。模型与鉴权相关设置只读�
 |----------|-------------|---------|
 | `RIPPERDOC_CONTEXT_TOKENS` | 上下文窗口大小限制 | 模型默认值 |
 | `RIPPERDOC_AUTO_COMPACT` | 启用自动压缩 | `true` |
+| `RIPPERDOC_AUTOCOMPACT_PCT_OVERRIDE` | 覆盖自动压缩百分比阈值 | - |
 | `RIPPERDOC_MAX_QUERY_ITERATIONS` | 最大查询循环次数 | `1024` |
 | `RIPPERDOC_MESSAGE_WARNING_THRESHOLD` | 警告的消息数阈值 | `500` |
 | `RIPPERDOC_MESSAGE_CRITICAL_THRESHOLD` | 严重警告的消息数阈值 | `1000` |
@@ -71,12 +72,25 @@ Ripperdoc 可通过环境变量进行配置。模型与鉴权相关设置只读�
 |----------|-------------|---------|
 | `RIPPERDOC_LSP_TIMEOUT` | LSP 请求超时（秒） | `20` |
 
+### Stdio 模式
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_EXIT_AFTER_STOP_DELAY` | Stdio 模式空闲后自动退出的延迟（秒） | - |
+
 ### MCP 设置
 
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
 | `RIPPERDOC_MCP_MAX_OUTPUT_TOKENS` | MCP 最大输出 token | `50000` |
 | `RIPPERDOC_MCP_WARNING_TOKENS` | MCP 警告阈值 | `40000` |
+| `RIPPERDOC_ENABLE_TOOL_SEARCH` | 启用延迟 MCP 工具搜索（`true`/`false`） | - |
+
+## 存储诊断
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `RIPPERDOC_STORAGE_DIAGNOSTICS` | 启用存储环境变量覆盖诊断 | `false` |
 
 ## 代理设置
 
@@ -106,7 +120,19 @@ RIPPERDOC_API_KEY=YOUR_API_KEY
 RIPPERDOC_MODEL=gpt-4o-mini
 RIPPERDOC_PROTOCOL=openai_compatible
 
-# Timeouts
+# 自动压缩覆盖
+RIPPERDOC_AUTOCOMPACT_PCT_OVERRIDE=80
+
+# Stdio 模式自动退出
+RIPPERDOC_EXIT_AFTER_STOP_DELAY=300
+
+# MCP 工具搜索控制
+RIPPERDOC_ENABLE_TOOL_SEARCH=true
+
+# 存储诊断
+RIPPERDOC_STORAGE_DIAGNOSTICS=true
+
+# 超时
 RIPPERDOC_API_TIMEOUT=180
 RIPPERDOC_MAX_RETRIES=5
 

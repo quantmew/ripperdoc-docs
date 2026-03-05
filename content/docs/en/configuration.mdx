@@ -106,6 +106,20 @@ Set `supports_vision` to `true` if your model supports image input and auto-dete
 | `openai_compatible` | `api_base`, `model` | Any OpenAI-compatible API |
 | `anthropic` | `api_key` | Anthropic Claude |
 | `gemini` | `api_key` | Google Gemini |
+| `volcengine` | `api_key`, `model` | Volcengine Seed 2.0 |
+| `aliyun` | `api_key`, `model` | Alibaba Cloud (Aliyun) |
+| `stepfun` | `api_key`, `model` | StepFun (阶跃星辰) |
+| `nvidia` | `api_key`, `model` | NVIDIA API endpoints |
+
+### Provider Preset Mode
+
+For simplified model configuration, you can use the provider preset mode:
+
+```bash
+ripperdoc --model claude-sonnet  # Auto-detects provider from model name
+```
+
+The system will automatically detect the correct provider and configuration based on the model name.
 
 ### Authentication Options
 

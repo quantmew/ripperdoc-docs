@@ -120,6 +120,10 @@ options = RipperdocAgentOptions(
 
     # Programmatic hooks
     hooks=None,                     # Event hook callbacks
+    
+    # Remote WebSocket transport
+    sdk_url=None,                   # WebSocket URL for remote SDK transport
+    replay_user_messages=False,     # Replay user messages when resuming sessions
 )
 ```
 

@@ -235,6 +235,26 @@ Load skill: pptx
 
 为任务查找相关工具。
 
+### Memory
+
+持久化记忆文件工具，用于在会话之间存储和检索知识。
+
+```
+查看记忆：patterns
+创建记忆：patterns.md 包含内容
+替换记忆：patterns 中的 old_string 为 new_string
+插入记忆：patterns 在第 10 行
+删除记忆：old-pattern
+重命名记忆：old-name 为 new-name
+```
+
+特性：
+- 在会话记忆目录中持久化存储
+- 支持创建/替换/插入/删除/重命名操作
+- 基于行的插入和替换
+- 可选 view_range 用于读取特定行范围
+- 带有权限 bypass 的自动记忆系统，用于上下文保留
+
 ## MCP 集成
 
 ### ListMcpServers
